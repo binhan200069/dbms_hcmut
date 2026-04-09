@@ -1,0 +1,103 @@
+Use assignment;
+start transaction;
+insert into user(Account, Name, Email, Status) values
+	('A1', 'Staff1', 'A1@gmail.com', 1),
+    ('A2', 'staff2', 'A2@gmail.com', 1),
+    ('A3', 'staff3', 'A3@gmail.com', 1),
+    ('A4', 'staff4', 'A4@gmail.com', 0),
+    ('A5', 'staff5', 'A5@gmail.com', default),
+	('A6', 'Customer1', 'C1@gmail.com', 1),
+    ('A7', 'Customer2', 'C2@gmail.com', 1),
+    ('A8', 'Customer3', 'C3@gmail.com', 1),
+    ('A9', 'Customer4', 'C4@gmail.com', 1),
+    ('A10', 'Customer5', 'C5@gmail.com', 0),
+	('A11', 'Driver1', 'D1@gmail.com', 1),
+    ('A12', 'Driver2', 'D2@gmail.com', 1),
+    ('A13', 'Driver3', 'D3@gmail.com', 1),
+    ('A14', 'Driver4', 'D4@gmail.com', 0),
+    ('A15', 'Driver5', 'D5@gmail.com', 0)
+;
+
+insert into user_phone(UserId, Phone) values
+	(1, '0910000001'),
+	(1, '0910000011'),
+	(2, '0910000002'),
+	(3, '0910000003'),
+	(4, '0910000004'),
+	(5, '0910000005'),
+	(6, '0920000006'),
+	(6, '0920000066'),
+	(7, '0920000007'),
+	(8, '0920000008'),
+	(8, '0920000088'),
+	(8, '0920000888'),
+	(9, '0920000009'),
+	(10, '0920000010'),
+	(11, '0930000011'),  
+	(12, '0930000012'), 
+	(12, '0930001212'), 
+	(13, '0930000013'),
+	(14, '0930000014'),
+	(15, '0930000015')
+;
+
+insert into staff(UserId, Position, Department) values
+	(1, 'Coordinator', 'Makerting'),
+	(2, 'Planner', 'Planning'),
+	(3, 'Supplier', 'Planning'),
+	(4, 'Supplier', 'Planning'),
+	(5, 'Supplier', 'Planning')    
+;
+
+insert into customer (UserId, Payterm, CustomerType, CreditLimit, StaffId, CareDate) values
+	(6, 'COD',		'Loyalty', 		500.00, 	2, '2026-04-01'), 		-- Cash On Delivery
+	(7, 'Net15', 	'Wholesaler', 	1500.00, 	3, '2026-04-02'),		-- Paid in 15 days
+	(8, 'Net60', 	'B2B', 			200000.00, 	3, '2026-04-03'),		-- Paid in 60 days
+	(9, 'EOM', 		'Retailer', 	30000.00, 	4, '2026-04-04'),		-- End of Month
+	(10, 'Prepaid', 'B2C', 			200.00, 	5, '2026-04-05')
+;
+
+insert into driver (UserId, LicenseNumber, LicenseClass, LicenseExpiryDate) values
+	(11, 'M1', 'A1', '2021-01-01'),
+	(12, 'M2', 'A2', '2022-02-02'),
+	(13, 'C2', 'C1', '2023-03-03'),
+	(14, 'T1', 'C2', '2024-04-04'),
+	(15, 'T2', 'A1', '2025-05-05')    
+;
+
+insert into vehicle (VehicleId, LicensePlate, VehicleType, LicenseExpiryDate) values
+	(1, '59A-001', 'Motor 75 cc', 	'2026-01-01'),
+	(2, '59B-002', 'Container', 	'2027-02-02'),
+	(3, '59C-003', 'Truck 10 ton', 	'2028-03-03'),
+	(4, '59D-004', 'Van', 			'2029-04-04'),
+	(5, '59E-005', 'Motor', 		'2030-05-05')    
+;
+
+insert into drive (UserId, VehicleId) values
+	(11, 1),
+	(11, 5),
+	(12, 4),
+	(13, 2),
+	(14, 3),
+	(15, 1),
+	(15, 5)
+;    
+
+insert into route(RouteId, RouteName, RouteType, TransitTime) values
+	(1, 'A-B', 1, 1000),
+	(2, 'A-C', 2, 2000),
+	(3, 'B-C', 1, 5000),
+	(4, 'B-C', 1, 10000),
+	(5, 'B-D', 1, 20000)
+;
+
+insert into assignment(AssignmentId, AssignDate, AssignmentStatus, ShipmentId) values
+	(1, '2026-04-01', 'Completed', '1'),
+	(2, '2026-04-02', 'Processing', '1'),
+	(3, '2026-04-03', 'Processing', '2'),
+	(4, null, 'Pending', '3'),
+	(5, null, 'Canceled', '4')
+;
+
+rollback;
+-- alter table user auto_increment = 1;
