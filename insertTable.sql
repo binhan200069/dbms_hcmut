@@ -84,12 +84,22 @@ insert into drive (UserId, VehicleId) values
 ;    
 
 insert into route(RouteId, RouteName, RouteType, TransitTime) values
-	(1, 'A-B', 1, 1000),
-	(2, 'A-C', 2, 2000),
-	(3, 'B-C', 1, 5000),
-	(4, 'B-C', 1, 10000),
-	(5, 'B-D', 1, 20000)
+	(1, 'Ho Chi Minh - Binh Duong', 'Highway', 1000),
+	(2, 'Binh Duong - Dong Nai', 'Highway', 2000),
+	(3, 'Ho Chi Minh - Dong Nai', 'Roadway', 5000),
+	(4, 'Binh Duong - Dong Nai', 'Roadway', 10000),
+	(5, 'Long An - Ho Chi Minh', 'Highway', 20000)
 ;
+
+insert into shipment(ShipmentId, TotalWeight, DepartureDate, ActualArrivalTime, RouteId) values
+	(1001, '50 kg', '2026-04-01 08:00:00', '2026-04-01 11:00:00', 1),
+	(1001, 500.5, '2026-04-01 08:00:00', '2026-04-01 11:00:00', 1),
+    (1002, 2500.0, '2026-04-01 14:00:00', '2026-04-03 15:30:00', 2),
+    (1003, 50.0, '2026-04-02 09:00:00', '2026-04-02 11:15:00', 3),
+    (1004, 1200.0, '2026-04-02 22:00:00', '2026-04-03 04:00:00', 4),
+    (1005, 3000.0, '2026-04-03 06:00:00', '2026-04-06 08:00:00', 5);
+;
+
 
 insert into assignment(AssignmentId, AssignDate, AssignmentStatus, ShipmentId) values
 	(1, '2026-04-01', 'Completed', '1'),
@@ -99,5 +109,5 @@ insert into assignment(AssignmentId, AssignDate, AssignmentStatus, ShipmentId) v
 	(5, null, 'Canceled', '4')
 ;
 
-rollback;
+-- rollback;
 -- alter table user auto_increment = 1;
