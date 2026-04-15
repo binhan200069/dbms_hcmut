@@ -3,6 +3,8 @@ import toast, { Toaster } from "react-hot-toast";
 import CreateOrderForm from "../components/orders/CreateOrderForm";
 import OrdersTable from "../components/orders/OrdersTable";
 import StatsCards from "../components/orders/StatsCards";
+import { useAuth } from "../context/AuthContext";
+import "../styles/dashboard.css";
 import {
     createOrder,
     deleteOrder,
@@ -11,12 +13,71 @@ import {
     updateOrder
 } from "../services/orderApi";
 
-function CustomerDashboardPage() {
-    const customerId = 1;
+const VIEW_CONFIG = {
+    CUSTOMER: {
+        pageTitle: "Customer Order Management",
+        allowedStatuses: ["ALL", "Pending", "Processing", "Delivered", "Cancelled"],
+        allowCreate: true,
+        allowMutate: true
+    },
+    DRIVER: {
+        pageTitle: "Driver Order Board",
+        allowedStatuses: ["ALL", "Processing", "Delivered"],
+        allowCreate: false,
+        allowMutate: false
+    },
+    ADMIN: {
+        pageTitle: "Admin Order Overview",
+        allowedStatuses: ["ALL", "Pending", "Processing", "Delivered", "Cancelled"],
+        allowCreate: false,
+        allowMutate: false
+    }
+};
+
+const MOCK_CUSTOMER_IDS = [1, 2, 3, 4, 5];
+
+function normalizeFilterByRole(filterValue, viewRole) {
+    const config = VIEW_CONFIG[viewRole] || VIEW_CONFIG.CUSTOMER;
+    if (config.allowedStatuses.includes(filterValue)) {
+        return filterValue;
+    }
+
+    return config.allowedStatuses[0];
+}
+
+function buildRoleStats(role, userId, sourceOrders) {
+    const totalOrders = sourceOrders.length;
+    const totalFreightCost = sourceOrders.reduce(
+        (sum, order) => sum + Number(order.FreightCost || 0),
+        0
+    );
+
+    return {
+        UserId: userId,
+        TotalOrders: totalOrders,
+        TotalFreightCost: totalFreightCost,
+        Role: role
+    };
+}
+
+async function fetchOrdersForCustomerIds(customerIds, statusFilter) {
+    const orderLists = await Promise.all(
+        customerIds.map((id) => fetchCustomerOrders(id, statusFilter))
+    );
+
+    return orderLists.flat();
+}
+
+function CustomerDashboardPage({ viewRole = "CUSTOMER", helperMessage = "" }) {
+    const { currentUser } = useAuth();
+    const resolvedConfig = VIEW_CONFIG[viewRole] || VIEW_CONFIG.CUSTOMER;
+    const isCustomerView = viewRole === "CUSTOMER";
+    const isDriverView = viewRole === "DRIVER";
+    const activeCustomerId = currentUser.id;
 
     const [orders, setOrders] = useState([]);
     const [stats, setStats] = useState({
-        CustomerId: customerId,
+        UserId: currentUser.id,
         TotalOrders: 0,
         TotalFreightCost: 0
     });
@@ -30,10 +91,25 @@ function CustomerDashboardPage() {
     const [savingEdit, setSavingEdit] = useState(false);
     const [deletingOrderId, setDeletingOrderId] = useState(null);
 
+    useEffect(() => {
+        setStatusFilter((prev) => normalizeFilterByRole(prev, viewRole));
+    }, [viewRole]);
+
     async function loadOrders() {
         try {
             setLoadingOrders(true);
-            const data = await fetchCustomerOrders(customerId, statusFilter);
+
+            const resolvedStatusFilter = normalizeFilterByRole(statusFilter, viewRole);
+            const customerIds = isCustomerView ? [activeCustomerId] : MOCK_CUSTOMER_IDS;
+
+            let data = await fetchOrdersForCustomerIds(customerIds, resolvedStatusFilter);
+
+            if (isDriverView) {
+                data = data.filter(
+                    (order) => order.OrderStatus === "Processing" || order.OrderStatus === "Delivered"
+                );
+            }
+
             setOrders(data);
         } catch (err) {
             toast.error(err.response?.data?.message || "Khong tai duoc danh sach don hang.");
@@ -45,7 +121,26 @@ function CustomerDashboardPage() {
     async function loadStats() {
         try {
             setLoadingStats(true);
-            const data = await fetchCustomerStats(customerId);
+
+            if (isCustomerView) {
+                const data = await fetchCustomerStats(activeCustomerId);
+                setStats({
+                    ...data,
+                    UserId: currentUser.id,
+                    Role: viewRole
+                });
+                return;
+            }
+
+            let sourceOrders = await fetchOrdersForCustomerIds(MOCK_CUSTOMER_IDS, "ALL");
+
+            if (isDriverView) {
+                sourceOrders = sourceOrders.filter(
+                    (order) => order.OrderStatus === "Processing" || order.OrderStatus === "Delivered"
+                );
+            }
+
+            const data = buildRoleStats(viewRole, currentUser.id, sourceOrders);
             setStats(data);
         } catch (err) {
             toast.error(err.response?.data?.message || "Khong tai duoc thong ke khach hang.");
@@ -56,16 +151,20 @@ function CustomerDashboardPage() {
 
     useEffect(() => {
         loadOrders();
-    }, [statusFilter]);
+    }, [statusFilter, activeCustomerId, viewRole]);
 
     useEffect(() => {
         loadStats();
-    }, []);
+    }, [activeCustomerId, viewRole]);
 
     async function handleCreateOrder(values) {
+        if (!resolvedConfig.allowCreate) {
+            return;
+        }
+
         try {
             await createOrder({
-                customerId,
+                customerId: activeCustomerId,
                 pickupLocation: values.pickupLocation,
                 deliveryLocation: values.deliveryLocation,
                 freightCost: values.freightCost
@@ -90,6 +189,10 @@ function CustomerDashboardPage() {
     }
 
     async function handleSaveEdit() {
+        if (!resolvedConfig.allowMutate) {
+            return;
+        }
+
         if (!editingOrderId) {
             return;
         }
@@ -111,6 +214,10 @@ function CustomerDashboardPage() {
     }
 
     async function handleDeleteOrder(orderId) {
+        if (!resolvedConfig.allowMutate) {
+            return;
+        }
+
         const confirmed = window.confirm("Ban co chac muon xoa don hang nay?");
         if (!confirmed) {
             return;
@@ -133,17 +240,26 @@ function CustomerDashboardPage() {
             <Toaster position="top-right" />
 
             <div className="container">
-                <h1 className="page-title">Logistics Customer Dashboard</h1>
+                <h1 className="page-title">{resolvedConfig.pageTitle} - {currentUser.name}</h1>
+
+                {helperMessage ? (
+                    <p style={{ margin: "0 0 16px 0", color: "#475569" }}>{helperMessage}</p>
+                ) : null}
 
                 <StatsCards
-                    customerId={customerId}
+                    role={viewRole}
+                    userId={currentUser.id}
                     stats={stats}
                     loadingStats={loadingStats}
                 />
 
-                <CreateOrderForm onSubmit={handleCreateOrder} />
+                {resolvedConfig.allowCreate ? (
+                    <CreateOrderForm onSubmit={handleCreateOrder} />
+                ) : null}
 
                 <OrdersTable
+                    viewRole={viewRole}
+                    allowedStatuses={resolvedConfig.allowedStatuses}
                     orders={orders}
                     loadingOrders={loadingOrders}
                     statusFilter={statusFilter}

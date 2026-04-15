@@ -1,8 +1,32 @@
-import CustomerDashboardPage from "./pages/CustomerDashboardPage";
-import "./styles/dashboard.css";
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import MainLayout from './layouts/MainLayout'
+import CustomerDashboard from './pages/CustomerDashboard'
+import DriverDashboard from './pages/DriverDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 
-function App() {
-  return <CustomerDashboardPage />;
+function RoleRedirect() {
+  const { currentUser, getPathByRole } = useAuth()
+
+  return <Navigate to={getPathByRole(currentUser.role)} replace />
 }
 
-export default App;
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<RoleRedirect />} />
+            <Route path="/customer" element={<CustomerDashboard />} />
+            <Route path="/driver" element={<DriverDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="*" element={<RoleRedirect />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  )
+}
+
+export default App

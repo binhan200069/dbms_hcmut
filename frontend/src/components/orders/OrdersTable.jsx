@@ -1,6 +1,8 @@
 import { formatCurrencyVND, formatDateTime, getStatusBadgeClass } from "../../utils/formatters";
 
 function OrdersTable({
+    viewRole,
+    allowedStatuses,
     orders,
     loadingOrders,
     statusFilter,
@@ -17,6 +19,15 @@ function OrdersTable({
     onSaveEdit,
     onDeleteOrder
 }) {
+    const canMutate = viewRole === "CUSTOMER";
+    const filterOptions = (allowedStatuses || [
+        "ALL",
+        "Pending",
+        "Processing",
+        "Delivered",
+        "Cancelled"
+    ]).map((status) => ({ value: status, label: status }));
+
     return (
         <section className="card">
             <div className="table-toolbar">
@@ -28,11 +39,11 @@ function OrdersTable({
                         value={statusFilter}
                         onChange={(event) => setStatusFilter(event.target.value)}
                     >
-                        <option value="ALL">ALL</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
+                        {filterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -47,7 +58,7 @@ function OrdersTable({
                             <th>Pickup</th>
                             <th>Delivery</th>
                             <th className="align-right">FreightCost</th>
-                            <th className="align-center">Actions</th>
+                            <th className="align-center">{canMutate ? "Actions" : "Scope"}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,7 +81,7 @@ function OrdersTable({
                         {!loadingOrders &&
                             orders.map((order) => {
                                 const isEditing = editingOrderId === order.OrderId;
-                                const canMutate = order.OrderStatus === "Pending";
+                                const canMutateRow = canMutate && order.OrderStatus === "Pending";
 
                                 return (
                                     <tr key={order.OrderId}>
@@ -107,43 +118,49 @@ function OrdersTable({
                                         </td>
                                         <td className="align-right">{formatCurrencyVND(order.FreightCost)}</td>
                                         <td className="align-center">
-                                            {isEditing ? (
-                                                <div className="action-row">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-success"
-                                                        onClick={onSaveEdit}
-                                                        disabled={savingEdit}
-                                                    >
-                                                        {savingEdit ? "Dang luu..." : "Luu"}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-secondary"
-                                                        onClick={onCancelEdit}
-                                                    >
-                                                        Huy
-                                                    </button>
-                                                </div>
+                                            {canMutate ? (
+                                                isEditing ? (
+                                                    <div className="action-row">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-success"
+                                                            onClick={onSaveEdit}
+                                                            disabled={savingEdit}
+                                                        >
+                                                            {savingEdit ? "Dang luu..." : "Luu"}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-secondary"
+                                                            onClick={onCancelEdit}
+                                                        >
+                                                            Huy
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="action-row">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-warning"
+                                                            onClick={() => onStartEdit(order)}
+                                                            disabled={!canMutateRow}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-danger"
+                                                            onClick={() => onDeleteOrder(order.OrderId)}
+                                                            disabled={!canMutateRow || deletingOrderId === order.OrderId}
+                                                        >
+                                                            {deletingOrderId === order.OrderId ? "Dang xoa..." : "Delete"}
+                                                        </button>
+                                                    </div>
+                                                )
                                             ) : (
-                                                <div className="action-row">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-warning"
-                                                        onClick={() => onStartEdit(order)}
-                                                        disabled={!canMutate}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-danger"
-                                                        onClick={() => onDeleteOrder(order.OrderId)}
-                                                        disabled={!canMutate || deletingOrderId === order.OrderId}
-                                                    >
-                                                        {deletingOrderId === order.OrderId ? "Dang xoa..." : "Delete"}
-                                                    </button>
-                                                </div>
+                                                <span className="badge badge-default">
+                                                    {viewRole === "DRIVER" ? "Read only" : "Admin overview"}
+                                                </span>
                                             )}
                                         </td>
                                     </tr>
