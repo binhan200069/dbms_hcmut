@@ -48,3 +48,5 @@ Tài xế là người trực tiếp nhận phân công, thực hiện chuyến 
 * **Tối ưu hóa Tuyến đường (Route Optimization):** Tích hợp giao diện bản đồ, tự động gợi ý `NextRoute` dựa trên bảng `ROUTE_SEGMENT` hiện tại.
 
 ---
+
+----
