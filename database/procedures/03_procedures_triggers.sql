@@ -137,7 +137,7 @@ BEGIN
         o.PickupLocation,
         o.DeliveryLocation,
         o.FreightCost,
-        u.UserId AS CustomerId,
+        u.UserId AS CustomerId
         u.Name AS CustomerName
     FROM `ORDER` o
     INNER JOIN `USER` u
