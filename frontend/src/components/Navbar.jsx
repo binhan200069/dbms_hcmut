@@ -8,9 +8,9 @@ const navItems = [
 ]
 
 const roleLabelMap = {
-    CUSTOMER: 'Customer',
-    DRIVER: 'Driver',
-    ADMIN: 'Admin',
+    Customer: 'Customer',
+    driver: 'Driver',
+    Admin: 'Admin',
 }
 
 function getNavClass(isActive) {
@@ -56,7 +56,7 @@ export default function Navbar() {
                     >
                         {mockUsers.map((user) => (
                             <option key={user.id} value={user.id}>
-                                User {user.id} ({roleLabelMap[user.role] || user.role})
+                                User {user.id} ({user.role})
                             </option>
                         ))}
                     </select>

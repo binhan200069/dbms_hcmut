@@ -138,8 +138,7 @@ BEGIN
         o.DeliveryLocation,
         o.FreightCost,
         u.UserId AS CustomerId,
-        u.Name AS CustomerName,
-        u.Phone AS CustomerPhone
+        u.Name AS CustomerName
     FROM `ORDER` o
     INNER JOIN `USER` u
         ON o.CustomerId = u.UserId

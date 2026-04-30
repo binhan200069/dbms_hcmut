@@ -56,6 +56,7 @@ async function createOrder(req, res, next) {
             data: created
         });
     } catch (err) {
+        console.error('Create order error:', err);
         return next(err);
     }
 }
