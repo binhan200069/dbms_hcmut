@@ -167,7 +167,8 @@ function CustomerDashboardPage({ viewRole = "CUSTOMER", helperMessage = "" }) {
                 customerId: activeCustomerId,
                 pickupLocation: values.pickupLocation,
                 deliveryLocation: values.deliveryLocation,
-                freightCost: values.freightCost
+                freightCost: values.freightCost,
+                paymentTerm: values.paymentTerm
             });
             toast.success("Tao don hang thanh cong!");
             await Promise.all([loadOrders(), loadStats()]);
@@ -203,7 +204,7 @@ function CustomerDashboardPage({ viewRole = "CUSTOMER", helperMessage = "" }) {
                 pickupLocation: editPickupLocation.trim(),
                 deliveryLocation: editDeliveryLocation.trim()
             });
-            toast.success("Cap nhat don hang thanh cong!");
+            toast.success("Order updated successfully!");
             handleCancelEdit();
             await loadOrders();
         } catch (err) {
@@ -249,6 +250,7 @@ function CustomerDashboardPage({ viewRole = "CUSTOMER", helperMessage = "" }) {
                 <StatsCards
                     role={viewRole}
                     userId={currentUser.id}
+                    customerType={currentUser.customerType}
                     stats={stats}
                     loadingStats={loadingStats}
                 />

@@ -136,3 +136,22 @@ Frontend:
 - cd frontend
 - npm run build
 - npm run dev
+
+
+
+# 1. Đảm bảo bạn đang ở nhánh develop và cập nhật mới nhất
+git checkout develop
+git pull origin develop
+
+# 2. Tạo nhánh mới (ví dụ feature/task-01) từ develop và chuyển sang nhánh đó
+git checkout -b feature/task-01
+
+# 3. Thực hiện thay đổi trên mã nguồn, sau đó thêm vào staging area
+git add .                      # thêm tất cả file đã thay đổi
+# hoặc git add <tên_file>      # thêm từng file cụ thể
+
+# 4. Commit thay đổi với message rõ ràng
+git commit -m "Mô tả ngắn gọn nội dung thay đổi"
+
+# 5. Push nhánh mới lên remote (thiết lập upstream lần đầu)
+git push -u origin feature/task-01

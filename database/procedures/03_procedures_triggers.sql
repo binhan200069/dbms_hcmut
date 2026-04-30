@@ -18,7 +18,8 @@ CREATE PROCEDURE sp_CreateOrder(
     IN p_CustomerId INT UNSIGNED,
     IN p_PickupLocation VARCHAR(255),
     IN p_DeliveryLocation VARCHAR(255),
-    IN p_FreightCost DECIMAL(12,2)
+    IN p_FreightCost DECIMAL(12,2),
+    IN p_PaymentTerm VARCHAR(20)
 )
 BEGIN
     IF p_FreightCost <= 0 THEN
@@ -36,6 +37,11 @@ BEGIN
         SET MESSAGE_TEXT = 'Lỗi: Điểm giao hàng không được để trống!';
     END IF;
 
+    IF p_PaymentTerm NOT IN ('cash', 'credit', 'cod') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Lỗi: Phương thức thanh toán không hợp lệ!';
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1
         FROM `CUSTOMER`
@@ -45,8 +51,8 @@ BEGIN
         SET MESSAGE_TEXT = 'Lỗi: Khách hàng không tồn tại!';
     END IF;
 
-    INSERT INTO `ORDER` (OrderDate, OrderStatus, PickupLocation, DeliveryLocation, FreightCost, CustomerId)
-    VALUES (NOW(), 'Pending', TRIM(p_PickupLocation), TRIM(p_DeliveryLocation), p_FreightCost, p_CustomerId);
+    INSERT INTO `ORDER` (OrderDate, OrderStatus, PickupLocation, DeliveryLocation, FreightCost, PaymentTerm, CustomerId)
+    VALUES (NOW(), 'Pending', TRIM(p_PickupLocation), TRIM(p_DeliveryLocation), p_FreightCost, p_PaymentTerm, p_CustomerId);
 
     SELECT LAST_INSERT_ID() AS OrderId;
 END //

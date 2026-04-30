@@ -37,7 +37,7 @@ export default function Navbar() {
         <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
             <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-6">
-                    <div className="text-lg font-bold text-slate-900">Uni Logistics</div>
+                    <div className="text-lg font-bold text-slate-900">Shopbee</div>
                     <nav className="hidden items-center gap-1 sm:flex">
                         {navItems.map((item) => (
                             <NavLink key={item.to} to={item.to} className={({ isActive }) => getNavClass(isActive)}>
@@ -48,7 +48,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <span className="hidden text-sm text-slate-600 md:inline">Mock Login</span>
+                    <span className="hidden text-sm text-slate-600 md:inline">Signed as</span>
                     <select
                         value={currentUser.id}
                         onChange={handleChangeUser}

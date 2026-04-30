@@ -29,6 +29,7 @@ CREATE TABLE `ORDER` (
     PickupLocation VARCHAR(255) NOT NULL,
     DeliveryLocation VARCHAR(255) NOT NULL,
     FreightCost DECIMAL(12, 2) NOT NULL,
+    PaymentTerm VARCHAR(20) NOT NULL DEFAULT 'cash',
     CustomerId INT UNSIGNED NOT NULL,
     PRIMARY KEY (OrderId),
     CONSTRAINT fk_order_customer FOREIGN KEY (CustomerId) REFERENCES `CUSTOMER` (UserId) ON UPDATE CASCADE ON DELETE CASCADE
