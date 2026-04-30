@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { fetchUserById, fetchUsers } from '../services/userApi'
 
 const AuthContext = createContext(null)
 
@@ -8,19 +9,67 @@ const rolePathMap = {
     ADMIN: '/admin',
 }
 
-const mockUsers = [
-    { id: 1, name: 'Nguyễn Văn A', role: 'CUSTOMER' },
+const initialMockUsers = [
+    { id: 1, name: 'Nguyễn Văn A', role: 'CUSTOMER', customerType: 'VIP' },
     { id: 2, name: 'Trần Thị B', role: 'DRIVER' },
     { id: 3, name: 'Lê Văn C', role: 'ADMIN' },
 ]
 
 export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(mockUsers[0])
+    const [mockUsers, setMockUsers] = useState(initialMockUsers)
+    const [currentUser, setCurrentUser] = useState(initialMockUsers[0])
+
+    useEffect(() => {
+        async function loadUsersFromDb() {
+            try {
+                const dbUsers = await fetchUsers()
+                const mergedUsers = initialMockUsers.map((localUser) => {
+                    const dbUser = dbUsers.find((u) => u.id === localUser.id)
+                    return dbUser ? { ...localUser, ...dbUser } : localUser
+                })
+
+                const additionalDbUsers = dbUsers
+                    .filter((dbUser) => !mergedUsers.some((user) => user.id === dbUser.id))
+                    .map((dbUser) => ({
+                        ...dbUser,
+                        role: 'CUSTOMER',
+                    }))
+
+                const finalUsers = [...mergedUsers, ...additionalDbUsers]
+                setMockUsers(finalUsers)
+
+                setCurrentUser((prev) => {
+                    const matched = finalUsers.find((user) => user.id === prev.id)
+                    return matched ? { ...prev, ...matched } : prev
+                })
+            } catch (error) {
+                console.warn('Could not load users from database:', error)
+            }
+        }
+
+        loadUsersFromDb()
+    }, [])
 
     const getPathByRole = (role) => rolePathMap[role] || '/customer'
 
-    const switchUser = (userObj) => {
+    const switchUser = async (userObj) => {
         if (!userObj || !userObj.id) return
+
+        if (userObj.role === 'CUSTOMER') {
+            try {
+                const dbUser = await fetchUserById(userObj.id)
+                if (dbUser) {
+                    setCurrentUser({
+                        ...userObj,
+                        ...dbUser,
+                    })
+                    return
+                }
+            } catch (error) {
+                console.warn('Could not load user from database:', error)
+            }
+        }
+
         setCurrentUser(userObj)
     }
 
@@ -31,7 +80,7 @@ export function AuthProvider({ children }) {
             switchUser,
             getPathByRole,
         }),
-        [currentUser],
+        [currentUser, mockUsers],
     )
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

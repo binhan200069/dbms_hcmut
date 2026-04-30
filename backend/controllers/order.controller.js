@@ -41,12 +41,14 @@ async function createOrder(req, res, next) {
             "Lỗi: Điểm giao hàng không được để trống!"
         );
         const freightCost = parseFreightCost(req.body.freightCost);
+        const paymentTerm = req.body.paymentTerm || 'cash'; // default to cash
 
         const created = await orderService.createOrder(
             customerId,
             pickupLocation,
             deliveryLocation,
-            freightCost
+            freightCost,
+            paymentTerm
         );
 
         return res.status(201).json({
