@@ -13,10 +13,10 @@ ALTER TABLE `USER` AUTO_INCREMENT = 1;
 start transaction;
 insert into user(Account, Name, Email, Status) values
 	('A1', 'Staff1', 'A1@gmail.com', 1),
-    ('A2', 'staff2', 'A2@gmail.com', 1),
-    ('A3', 'staff3', 'A3@gmail.com', 1),
-    ('A4', 'staff4', 'A4@gmail.com', 0),
-    ('A5', 'staff5', 'A5@gmail.com', default),
+    ('A2', 'Staff2', 'A2@gmail.com', 1),
+    ('A3', 'Staff3', 'A3@gmail.com', 1),
+    ('A4', 'Staff4', 'A4@gmail.com', 0),
+    ('A5', 'Staff5', 'A5@gmail.com', default),
 	('A6', 'Customer1', 'C1@gmail.com', 1),
     ('A7', 'Customer2', 'C2@gmail.com', 1),
     ('A8', 'Customer3', 'C3@gmail.com', 1),
@@ -252,8 +252,7 @@ BEGIN
 		o.DeliveryLocation,
 		o.FreightCost,
 		u.UserId AS CustomerId,
-		u.Name AS CustomerName,
-		u.Phone AS CustomerPhone
+		u.Name AS CustomerName
 	FROM `ORDER` o
 	INNER JOIN `USER` u
 		ON o.CustomerId = u.UserId

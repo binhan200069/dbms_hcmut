@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
                     .filter((dbUser) => !mergedUsers.some((user) => user.id === dbUser.id))
                     .map((dbUser) => ({
                         ...dbUser,
-                        role: 'CUSTOMER',
+                        role: dbUser.role || 'CUSTOMER',
                     }))
 
                 const finalUsers = [...mergedUsers, ...additionalDbUsers]

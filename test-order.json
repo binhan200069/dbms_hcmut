@@ -1,0 +1,7 @@
+{
+  "customerId": 1,
+  "pickupLocation": "Location A",
+  "deliveryLocation": "Location B",
+  "freightCost": 100,
+  "paymentTerm": "cash"
+}
