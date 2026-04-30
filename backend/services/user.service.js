@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 async function getUserById(userId) {
     const [rows] = await db.query(
-        `SELECT u.UserId AS id, u.Name AS name, u.Phone AS phone, c.CustomerType AS customerType
+        `SELECT u.UserId AS id, u.Name AS name, c.CustomerType AS customerType
          FROM \`USER\` u
          LEFT JOIN \`CUSTOMER\` c ON u.UserId = c.UserId
          WHERE u.UserId = ?`,
@@ -14,7 +14,7 @@ async function getUserById(userId) {
 
 async function getAllUsers() {
     const [rows] = await db.query(
-        `SELECT u.UserId AS id, u.Name AS name, u.Phone AS phone, c.CustomerType AS customerType
+        `SELECT u.UserId AS id, u.Name AS name, c.CustomerType AS customerType
          FROM \`USER\` u
          LEFT JOIN \`CUSTOMER\` c ON u.UserId = c.UserId`
     );
