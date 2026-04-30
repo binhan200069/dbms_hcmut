@@ -16,19 +16,19 @@ import {
 const VIEW_CONFIG = {
     CUSTOMER: {
         pageTitle: "Customer Order Management",
-        allowedStatuses: ["ALL", "Pending", "Processing", "Delivered", "Cancelled"],
+        allowedStatuses: ["All", "Pending", "Processing", "Delivered", "Cancelled"],
         allowCreate: true,
         allowMutate: true
     },
     DRIVER: {
         pageTitle: "Driver Order Board",
-        allowedStatuses: ["ALL", "Processing", "Delivered"],
+        allowedStatuses: ["All", "Processing", "Delivered"],
         allowCreate: false,
         allowMutate: false
     },
     ADMIN: {
         pageTitle: "Admin Order Overview",
-        allowedStatuses: ["ALL", "Pending", "Processing", "Delivered", "Cancelled"],
+        allowedStatuses: ["All", "Pending", "Processing", "Delivered", "Cancelled"],
         allowCreate: false,
         allowMutate: false
     }
