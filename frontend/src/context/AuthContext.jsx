@@ -1,97 +1,145 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { fetchUserById, fetchUsers } from '../services/userApi'
+/**
+ * AuthContext.jsx
+ * ─────────────────────────────────────────────────────────────────────
+ * Quản lý trạng thái "Giả lập vai trò" (Mock Role) cho toàn bộ app.
+ *
+ * Cơ chế hoạt động:
+ *  1. Role được lưu vào localStorage để persist qua refresh.
+ *  2. axiosClient.js tự đọc localStorage để gắn header `x-user-role`.
+ *  3. Sidebar và menu thay đổi theo role từ Context này.
+ *
+ * Các role: STAFF | CUSTOMER | DRIVER
+ */
 
-const AuthContext = createContext(null)
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const rolePathMap = {
-    CUSTOMER: '/customer',
-    DRIVER: '/driver',
-    ADMIN: '/admin',
-}
+// ── Constants ─────────────────────────────────────────────────────────
+export const ROLES = {
+  STAFF:    'STAFF',
+  CUSTOMER: 'CUSTOMER',
+  DRIVER:   'DRIVER',
+};
 
-const initialMockUsers = [
-    { id: 1, name: 'Nguyễn Văn A', role: 'CUSTOMER', customerType: 'VIP' },
-    { id: 2, name: 'Trần Thị B', role: 'DRIVER' },
-    { id: 3, name: 'Lê Văn C', role: 'ADMIN' },
-]
+// Map role → đường dẫn trang chủ tương ứng
+const ROLE_HOME_PATH = {
+  [ROLES.STAFF]:    '/admin',
+  [ROLES.CUSTOMER]: '/customer',
+  [ROLES.DRIVER]:   '/driver',
+};
+
+// Mock users: mỗi role tương ứng với 1 người dùng giả lập
+const MOCK_USERS = {
+  [ROLES.STAFF]: {
+    id:     'STF001',
+    name:   'Nguyễn Điều Phối',
+    role:   ROLES.STAFF,
+    email:  'staff@logistics.vn',
+    avatar: 'NĐ',
+  },
+  [ROLES.CUSTOMER]: {
+    id:     'CUS001',
+    name:   'Trần Thị Khách Hàng',
+    role:   ROLES.CUSTOMER,
+    email:  'customer@logistics.vn',
+    avatar: 'TK',
+  },
+  [ROLES.DRIVER]: {
+    id:     'DRV001',
+    name:   'Lê Văn Tài Xế',
+    role:   ROLES.DRIVER,
+    email:  'driver@logistics.vn',
+    avatar: 'LX',
+  },
+};
+
+// Thông tin hiển thị cho từng role (dùng trong RoleSwitcher)
+export const ROLE_META = [
+  {
+    role:        ROLES.STAFF,
+    label:       'Nhân viên điều phối',
+    description: 'Quản lý xe, đơn hàng, phân công',
+    color:       'indigo',
+    icon:        'staff',
+  },
+  {
+    role:        ROLES.CUSTOMER,
+    label:       'Khách hàng',
+    description: 'Tạo đơn hàng, theo dõi vận chuyển',
+    color:       'emerald',
+    icon:        'customer',
+  },
+  {
+    role:        ROLES.DRIVER,
+    label:       'Tài xế',
+    description: 'Xem chuyến phân công, cập nhật trạng thái',
+    color:       'amber',
+    icon:        'driver',
+  },
+];
+
+// ── Context ───────────────────────────────────────────────────────────
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [mockUsers, setMockUsers] = useState(initialMockUsers)
-    const [currentUser, setCurrentUser] = useState(initialMockUsers[0])
+  // Lấy role đã lưu từ lần trước, mặc định STAFF
+  const [currentRole, setCurrentRole] = useState(() => {
+    const saved = localStorage.getItem('userRole');
+    return Object.values(ROLES).includes(saved) ? saved : ROLES.STAFF;
+  });
 
-    useEffect(() => {
-        async function loadUsersFromDb() {
-            try {
-                const dbUsers = await fetchUsers()
-                const mergedUsers = initialMockUsers.map((localUser) => {
-                    const dbUser = dbUsers.find((u) => u.id === localUser.id)
-                    return dbUser ? { ...localUser, ...dbUser } : localUser
-                })
+  // currentUser được tính từ currentRole
+  const currentUser = useMemo(() => MOCK_USERS[currentRole], [currentRole]);
 
-                const additionalDbUsers = dbUsers
-                    .filter((dbUser) => !mergedUsers.some((user) => user.id === dbUser.id))
-                    .map((dbUser) => ({
-                        ...dbUser,
-                        role: dbUser.role || 'CUSTOMER',
-                    }))
+  // Đồng bộ localStorage mỗi khi role thay đổi
+  useEffect(() => {
+    localStorage.setItem('userRole', currentRole);
+  }, [currentRole]);
 
-                const finalUsers = [...mergedUsers, ...additionalDbUsers]
-                setMockUsers(finalUsers)
+  /**
+   * switchRole — Chuyển đổi vai trò và điều hướng sang trang tương ứng.
+   * Dùng window.location.href để đảm bảo reset toàn bộ state của app.
+   */
+  const switchRole = (newRole) => {
+    if (!MOCK_USERS[newRole]) return;
+    localStorage.setItem('userRole', newRole);
+    setCurrentRole(newRole);
+    // Hard navigate để đảm bảo tất cả state được reset hoàn toàn
+    window.location.href = ROLE_HOME_PATH[newRole];
+  };
 
-                setCurrentUser((prev) => {
-                    const matched = finalUsers.find((user) => user.id === prev.id)
-                    return matched ? { ...prev, ...matched } : prev
-                })
-            } catch (error) {
-                console.warn('Could not load users from database:', error)
-            }
-        }
+  /** Trả về đường dẫn home của một role cụ thể */
+  const getHomePath = (role = currentRole) => ROLE_HOME_PATH[role] || '/admin';
 
-        loadUsersFromDb()
-    }, [])
+  /** Kiểm tra xem user hiện tại có role được phép không */
+  const hasRole = (...allowedRoles) => allowedRoles.includes(currentRole);
 
-    const getPathByRole = (role) => rolePathMap[role] || '/customer'
+  const value = useMemo(
+    () => ({
+      currentUser,
+      currentRole,
+      switchRole,
+      getHomePath,
+      hasRole,
+      ROLES,
+      ROLE_META,
+      // Backward compat
+      getPathByRole: getHomePath,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUser, currentRole]
+  );
 
-    const switchUser = async (userObj) => {
-        if (!userObj || !userObj.id) return
-
-        if (userObj.role === 'CUSTOMER') {
-            try {
-                const dbUser = await fetchUserById(userObj.id)
-                if (dbUser) {
-                    setCurrentUser({
-                        ...userObj,
-                        ...dbUser,
-                    })
-                    return
-                }
-            } catch (error) {
-                console.warn('Could not load user from database:', error)
-            }
-        }
-
-        setCurrentUser(userObj)
-    }
-
-    const value = useMemo(
-        () => ({
-            currentUser,
-            mockUsers,
-            switchUser,
-            getPathByRole,
-        }),
-        [currentUser, mockUsers],
-    )
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * useAuth — Hook để sử dụng AuthContext trong bất kỳ component nào.
+ * Ném lỗi nếu dùng ngoài AuthProvider.
+ */
 export function useAuth() {
-    const context = useContext(AuthContext)
-
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider')
-    }
-
-    return context
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth() phải được dùng bên trong <AuthProvider>');
+  return ctx;
 }
+
+export default AuthContext;
