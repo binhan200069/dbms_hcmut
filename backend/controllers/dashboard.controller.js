@@ -9,10 +9,7 @@ async function getDashboardStats(req, res, next) {
     try {
         const { month = null, year = null } = req.query;
         // sp_DashboardStats trả 5 result sets
-        const [rows] = await pool.query("CALL sp_DashboardStats(?, ?)", [
-            month || null,
-            year  || null,
-        ]);
+        const [rows] = await pool.query("CALL sp_DashboardStats()");
         return res.json({
             success: true,
             data: {
