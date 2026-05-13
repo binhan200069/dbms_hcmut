@@ -34,13 +34,14 @@ async function getCustomerStats(customerId) {
     );
 }
 
-async function createOrder(customerId, pickupLocation, deliveryLocation, freightCost, paymentTerm) {
-    const [callRows] = await db.query("CALL sp_CreateOrder(?, ?, ?, ?, ?)", [
-        customerId,
+async function createOrder(pickupLocation, deliveryLocation, freightCost, paymentTerm, staffId, customerId) {
+    const [callRows] = await db.query("CALL sp_CreateOrder(?, ?, ?, ?, ?, ?)", [
         pickupLocation,
         deliveryLocation,
         freightCost,
-        paymentTerm
+        paymentTerm,
+        staffId,
+        customerId,
     ]);
 
     const rows = extractCallRows(callRows);

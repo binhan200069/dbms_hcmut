@@ -134,9 +134,9 @@ export default function OrderHistory() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
-            <History size={24} className="text-emerald-600" />Lịch sử đơn hàng
+            <History size={24} className="text-emerald-600" />Order Management
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Tất cả đơn hàng của bạn</p>
+          <p className="text-slate-500 text-sm mt-1">All your orders</p>
         </div>
         <button onClick={load} className="btn btn-secondary">
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />Làm mới
@@ -146,8 +146,8 @@ export default function OrderHistory() {
       {/* Filters */}
       <div className="card p-4 flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="form-input pl-10" placeholder="Tìm mã đơn hoặc tên KH..." value={search}
+          <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input className="form-input pl-16" placeholder="Tìm mã đơn hoặc tên KH..." value={search}
             onChange={(e) => setSearch(e.target.value)} />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}
         </div>

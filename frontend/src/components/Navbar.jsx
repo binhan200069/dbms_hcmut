@@ -21,11 +21,11 @@ function getNavClass(isActive) {
 
 export default function Navbar() {
     const navigate = useNavigate()
-    const { currentUser, mockUsers, switchUser, getPathByRole } = useAuth()
+    const { currentUser, users, switchUser, getPathByRole } = useAuth()
 
     const handleChangeUser = (event) => {
         const selectedId = Number.parseInt(event.target.value, 10)
-        const selectedUser = mockUsers.find((user) => user.id === selectedId)
+        const selectedUser = users.find((user) => user.id === selectedId)
 
         if (selectedUser) {
             switchUser(selectedUser)
@@ -50,15 +50,21 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                     <span className="hidden text-sm text-slate-600 md:inline">Signed as</span>
                     <select
-                        value={currentUser.id}
+                        value={currentUser?.id ?? ''}
                         onChange={handleChangeUser}
                         className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-slate-400 transition focus:ring-2"
                     >
-                        {mockUsers.map((user) => (
-                            <option key={user.id} value={user.id}>
-                                User {user.id} ({user.role})
-                            </option>
-                        ))}
+                        {users.length > 0 ? (
+                            users.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.name} ({user.role})
+                                </option>
+                            ))
+                        ) : currentUser ? (
+                            <option value={currentUser.id}>{currentUser.name} ({currentUser.role})</option>
+                        ) : (
+                            <option value="">Đang tải người dùng...</option>
+                        )}
                     </select>
                 </div>
             </div>

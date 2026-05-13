@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import {
+  Users,
   LayoutDashboard,
   Truck,
   Package,
@@ -39,31 +40,32 @@ import {
 const MENU_CONFIG = {
   STAFF: [
     {
-      section: 'Tổng quan',
+      section: 'Overview',
       items: [
         { to: '/admin',          icon: LayoutDashboard, label: 'Dashboard',         exact: true },
       ],
     },
     {
-      section: 'Vận hành',
+      section: 'Operations',
       items: [
-        { to: '/admin/vehicles',  icon: Truck,           label: 'Phương tiện'   },
         { to: '/admin/dispatch',  icon: ClipboardList,   label: 'Phân công chuyến' },
         { to: '/admin/shipments', icon: Package,         label: 'Chuyến vận chuyển' },
       ],
     },
     {
-      section: 'Quản lý đơn hàng',
+      section: 'Management',
       items: [
-        { to: '/admin/orders',    icon: Package,         label: 'Tất cả đơn hàng' },
+        { to: '/admin/orders',    icon: Package,         label: 'Orders' },
+        { to: '/admin/vehicles',  icon: Truck,           label: 'Vehicles' },
+        { to: '/admin/staff',     icon: Users,           label: 'Staff' },
       ],
     },
   ],
   CUSTOMER: [
     {
-      section: 'Đơn hàng',
+      section: 'Orders',
       items: [
-        { to: '/customer',         icon: LayoutDashboard, label: 'Tổng quan',        exact: true },
+        { to: '/customer',         icon: LayoutDashboard, label: 'Overview',        exact: true },
         { to: '/customer/create',  icon: Package,         label: 'Tạo đơn mới'  },
         { to: '/customer/history', icon: History,         label: 'Lịch sử đơn hàng' },
       ],
@@ -89,10 +91,11 @@ const MENU_CONFIG = {
 
 // ── Role Icon Map ─────────────────────────────────────────────────────
 const RoleIcon = ({ icon, size = 16 }) => {
-  if (icon === 'staff')    return <Shield    size={size} />;
-  if (icon === 'customer') return <User      size={size} />;
-  if (icon === 'driver')   return <HardHat   size={size} />;
-  return null;
+  const normalized = String(icon || '').toLowerCase();
+  if (normalized === 'staff') return <Shield size={size} />;
+  if (normalized === 'customer') return <User size={size} />;
+  if (normalized === 'driver') return <HardHat size={size} />;
+  return <Shield size={size} />;
 };
 
 // ── Role color map ────────────────────────────────────────────────────
@@ -143,7 +146,7 @@ function Sidebar({ isOpen, onClose }) {
             <div>
               <p className="text-white font-bold text-sm leading-tight">LogiChain</p>
               <p className="text-xs" style={{ color: 'var(--sidebar-text)' }}>
-                Quản lý vận chuyển
+                Make it better, together
               </p>
             </div>
           </div>
@@ -163,15 +166,15 @@ function Sidebar({ isOpen, onClose }) {
             <div
               className={`w-9 h-9 rounded-full ${roleColor.bg} flex items-center justify-center ring-2 ${roleColor.ring} ring-offset-2 ring-offset-slate-900 shrink-0`}
             >
-              <span className="text-white font-bold text-xs">{currentUser?.avatar}</span>
+              <RoleIcon icon={currentRole} size={18} />
             </div>
-            <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">
+            <div className="flex flex-col">
+              <span className="text-white text-sm font-semibold truncate">
                 {currentUser?.name}
-              </p>
-              <p className="text-xs truncate" style={{ color: 'var(--sidebar-text)' }}>
+              </span>
+              <span className="text-xs" style={{ color: 'var(--sidebar-text)' }}>
                 {currentUser?.email}
-              </p>
+              </span>
             </div>
           </div>
         </div>
@@ -247,9 +250,23 @@ function Sidebar({ isOpen, onClose }) {
 // ROLE SWITCHER DROPDOWN
 // ═══════════════════════════════════════════════════════════════════════
 function RoleSwitcher() {
-  const { currentRole, currentUser, switchRole, ROLE_META: roleMeta } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, users, switchUser, getRoleCategory, getHomePath, ROLES } = useAuth();
   const [open, setOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState(null);
   const ref = useRef(null);
+
+  // Navigate when role changes
+  useEffect(() => {
+    if (pendingRole) {
+      // Use requestAnimationFrame to ensure React has updated state
+      requestAnimationFrame(() => {
+        const homePath = getHomePath(pendingRole);
+        navigate(homePath);
+        setPendingRole(null);
+      });
+    }
+  }, [pendingRole, navigate, getHomePath]);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -260,8 +277,19 @@ function RoleSwitcher() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const currentMeta = roleMeta.find((m) => m.role === currentRole);
-  const roleColor = ROLE_COLORS[currentRole];
+  const getRoleLabel = (role) => {
+    if (role === ROLES.STAFF) return 'Nhân viên Điều phối'
+    if (role === ROLES.CUSTOMER) return 'Khách hàng'
+    if (role === ROLES.DRIVER) return 'Tài xế'
+    return role
+  }
+
+  const handleSelectUser = (user) => {
+    const newRole = getRoleCategory(user.role);
+    setPendingRole(newRole);
+    switchUser(user);
+    setOpen(false);
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -273,10 +301,10 @@ function RoleSwitcher() {
         {/* Role color dot */}
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ background: roleColor.badge }}
+          style={{ background: ROLE_COLORS[(currentUser?.role || '').toUpperCase()]?.badge || '#6366f1' }}
         />
         <span className="text-sm font-semibold text-slate-700 hidden sm:block">
-          {currentMeta?.label}
+          {currentUser?.name ?? 'Chọn người dùng'}
         </span>
         <ChevronDown
           size={14}
@@ -286,69 +314,76 @@ function RoleSwitcher() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-xl border border-slate-100 py-3 z-50 animate-scale-in">
           {/* Header */}
           <div className="px-4 py-3 border-b border-slate-100">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Giả lập vai trò
-            </p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Chọn vai trò để xem giao diện tương ứng
+              Choose user to login
             </p>
           </div>
 
-          {/* Role list */}
-          <div className="p-2">
-            {roleMeta.map((meta) => {
-              const isActive = meta.role === currentRole;
-              const color = ROLE_COLORS[meta.role];
-              return (
-                <button
-                  key={meta.role}
-                  onClick={() => {
-                    if (!isActive) {
-                      switchRole(meta.role);
-                      setOpen(false);
-                    }
-                  }}
-                  disabled={isActive}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-150
-                    ${isActive
-                      ? 'bg-slate-50 cursor-default'
-                      : 'hover:bg-slate-50 cursor-pointer'
-                    }
-                  `}
-                >
-                  {/* Icon circle */}
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color.bg}`}
+          {/* User list */}
+          <div className="p-2 max-h-64 overflow-y-auto">
+            {users.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                User List is Loading...
+              </div>
+            ) : (
+              users.map((user) => {
+                const isActive = user.id === currentUser?.id;
+                const normalizedRole = (user.role || '').toUpperCase();
+                const userCategory = getRoleCategory(user.role);
+                const color = ROLE_COLORS[userCategory];
+                return (
+                  <button
+                    key={user.id}
+                    onClick={() => {
+                      if (!isActive) {
+                        handleSelectUser(user);
+                      }
+                    }}
+                    disabled={isActive}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-150
+                      ${isActive
+                        ? 'bg-slate-50 cursor-default'
+                        : 'hover:bg-slate-50 cursor-pointer'
+                      }
+                    `}
                   >
-                    <RoleIcon icon={meta.icon} size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{meta.label}</p>
-                    <p className="text-xs text-slate-500 truncate">{meta.description}</p>
-                  </div>
-                  {/* Active check */}
-                  {isActive && (
-                    <span
-                      className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                      style={{ background: roleColor.badge }}
+                    {/* Icon circle */}
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color?.bg || 'bg-indigo-500'}`}
                     >
-                      Đang dùng
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                      <RoleIcon icon={userCategory} size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800">{getRoleLabel(user.role)}</p>
+                        <span className="text-xs text-slate-500">({user.id})</span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">{user.name}</p>
+                    </div>
+                    {/* Active check */}
+                    {isActive && (
+                      <span
+                        className="shrink-0 px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                        style={{ background: color?.badge || '#6366f1' }}
+                      >
+                        Online
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
           </div>
 
           {/* Footer hint */}
           <div className="px-4 py-2 border-t border-slate-100">
             <p className="text-xs text-slate-400 flex items-center gap-1.5">
               <RefreshCw size={11} />
-              Đổi vai trò sẽ điều hướng sang trang tương ứng
+              Change user will navigate to the corresponding page
             </p>
           </div>
         </div>
@@ -377,10 +412,10 @@ function Topbar({ onMenuToggle, pageTitle }) {
           </button>
           <div>
             <h1 className="text-base font-bold text-slate-800 leading-tight">
-              {pageTitle || 'Dashboard'}
+              {pageTitle || 'Logistics & Supply Chain Management System'}
             </h1>
             <p className="text-xs text-slate-400 hidden sm:block">
-              Hệ thống Quản lý Logistics & Chuỗi Cung Ứng
+              Database System Course Project - HCMUT 2026
             </p>
           </div>
         </div>

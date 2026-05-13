@@ -10,32 +10,134 @@ SET CHARACTER SET utf8mb4;
 
 -- Drop all procedures first
 DROP PROCEDURE IF EXISTS sp_GetAllVehicles;
-
 DROP PROCEDURE IF EXISTS sp_GetVehicleById;
-
 DROP PROCEDURE IF EXISTS sp_CreateVehicle;
-
 DROP PROCEDURE IF EXISTS sp_GetAllOrders;
-
 DROP PROCEDURE IF EXISTS sp_GetOrderById;
 
-DROP PROCEDURE IF EXISTS sp_CreateOrder;
-
-DROP PROCEDURE IF EXISTS sp_AddItemToOrder;
-
 DROP PROCEDURE IF EXISTS sp_DashboardStats;
-
 DROP PROCEDURE IF EXISTS sp_GetTrackingLogs;
-
 DROP PROCEDURE IF EXISTS sp_GetAllAssignments;
 
-DROP PROCEDURE IF EXISTS sp_CreateAssignment;
-
 DROP PROCEDURE IF EXISTS sp_UpdateAssignmentStatus;
-
 DROP PROCEDURE IF EXISTS sp_GetAllShipments;
-
 DROP PROCEDURE IF EXISTS sp_CreateShipment;
+DROP PROCEDURE IF EXISTS sp_CreateNewAccount;
+
+-- =============================================================================
+-- STAFF PROCEDURES
+-- =============================================================================
+DROP PROCEDURE IF EXISTS sp_GetAllStaff;
+DELIMITER $$
+
+CREATE PROCEDURE sp_GetAllStaff()
+BEGIN
+    SELECT u.UserId, u.Account, u.Name, u.email, u.Address,
+            (SELECT p.Phone FROM user_phone p WHERE p.UserId = u.UserId LIMIT 1) AS Phone,
+            s.Position, s.Department,
+            sv.ManageDate, sv.SupervisorId
+    FROM staff s
+    LEFT JOIN `USER` u on u.UserId = s.UserId
+    LEFT JOIN SUPERVISE sv on s.UserId = sv.SuperviseeId
+    WHERE u.Status = 1;
+END$$
+
+DELIMITER;
+
+DELIMITER $$
+
+CREATE PROCEDURE sp_GetStaffById(IN p_UserId INT UNSIGNED)
+BEGIN
+    SELECT u.UserId, u.Account, u.Name, u.email,
+            (SELECT p.Phone FROM user_phone p WHERE p.UserId = u.UserId LIMIT 1) AS Phone,
+            s.Position, s.Department,
+            sv.ManageDate, sv.SupervisorId
+    FROM staff s
+    LEFT JOIN `USER` u on u.UserId = s.UserId
+    LEFT JOIN SUPERVISE sv on s.UserId = sv.SuperviseeId
+    WHERE u.UserId = p_UserId AND u.Status = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS sp_CreateStaff;
+DELIMITER $$
+CREATE PROCEDURE sp_CreateStaff(    
+    IN v_Name       VARCHAR(100),
+    IN v_Account    VARCHAR(50),
+    In v_Email      VARCHAR(100),
+    IN v_Address    VARCHAR(255),
+    IN v_Position   VARCHAR(100),
+    IN v_Department VARCHAR(100),
+    IN v_Phone      VARCHAR(20)  
+)
+BEGIN
+    DECLARE v_NewUser INT UNSIGNED;
+    START TRANSACTION;
+        INSERT INTO `USER` (Name, Email, Account, Address)
+        VALUES (v_Name, v_Email, v_Account, v_Address);
+        
+        SET v_NewUser = LAST_INSERT_ID();
+        INSERT INTO `STAFF` (UserId, Position, Department)
+        VALUES (v_NewUser, v_Position, v_Department);
+        INSERT INTO `USER_PHONE` (UserId, Phone)
+        VALUES (v_NewUser, v_Phone);
+    COMMIT;
+END$$
+DELIMITER;
+
+DROP PROCEDURE IF EXISTS sp_UpdateStaff;
+DELIMITER $$
+CREATE PROCEDURE sp_UpdateStaff(
+    IN v_UserId     VARCHAR(10),
+    IN v_Name       VARCHAR(100),
+    IN v_Address    VARCHAR(255),
+    IN v_Position   VARCHAR(50),
+    IN v_Department VARCHAR(100),
+    IN v_Phone      VARCHAR(20)
+)
+BEGIN
+    START TRANSACTION;
+    UPDATE STAFF
+    SET 
+        Position    = v_Position, 
+        Department  = v_Department
+    WHERE UserId = v_UserId;
+    
+    UPDATE `USER`
+    SET `Name`      = v_Name,
+        `Address`   = v_Address
+    WHERE UserId = v_UserId;
+
+    DELETE FROM user_phone
+    WHERE UserId = v_UserId
+        AND Phone = (
+            SELECT Phone FROM (
+                SELECT Phone FROM user_phone
+                WHERE UserId = v_UserId
+                LIMIT 1
+            ) AS tmp
+        );
+    INSERT INTO user_phone (UserId, Phone)
+    VALUES(v_UserId, v_Phone);
+
+    COMMIT;
+END$$
+DELIMITER;
+
+DROP PROCEDURE IF EXISTS sp_DeleteStaff;
+DELIMITER $$
+CREATE PROCEDURE sp_DeleteStaff(IN p_UserId INT UNSIGNED)
+BEGIN
+    START TRANSACTION;
+    DELETE FROM STAFF WHERE UserId = p_UserId;
+    DELETE FROM user_phone WHERE UserId = p_UserId;
+    DELETE FROM `USER` WHERE UserId = p_UserId;
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+
+
 
 DELIMITER $$
 
@@ -86,6 +188,8 @@ BEGIN
     WHERE o.OrderId = p_OrderId;
 END$$
 
+DROP PROCEDURE IF EXISTS sp_CreateOrder;
+DELIMITER $$ 
 CREATE PROCEDURE sp_CreateOrder(
     IN p_CustomerId INT UNSIGNED,
     IN p_PickupLocation VARCHAR(255),
@@ -94,6 +198,19 @@ CREATE PROCEDURE sp_CreateOrder(
     IN p_PaymentTerm VARCHAR(20)
 )
 BEGIN
+    DECLARE v_StaffId INT UNSIGNED;
+    
+    SELECT UserId INTO v_StaffId
+    FROM STAFF
+    WHERE Department = 'Planning' AND Position != 'Manager'
+    ORDER BY RAND()
+    LIMIT 1;
+
+    IF v_StaffId IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No Staff available in Planning Department';
+    END IF;
+
     IF p_FreightCost <= 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Freight cost must be greater than 0!';
     END IF;
@@ -110,28 +227,25 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Customer does not exist!';
     END IF;
 
-    INSERT INTO `ORDER` (OrderDate, OrderStatus, PickupLocation, DeliveryLocation, FreightCost, PaymentTerm, CustomerId)
-    VALUES (NOW(), 'Pending', TRIM(p_PickupLocation), TRIM(p_DeliveryLocation), p_FreightCost, p_PaymentTerm, p_CustomerId);
+    INSERT INTO `ORDER` (OrderDate, OrderStatus, PickupLocation, DeliveryLocation, FreightCost, StaffId, CustomerId)
+    VALUES (NOW(), 'Processing', p_PickupLocation, p_DeliveryLocation, p_FreightCost, v_StaffId, p_CustomerId);
+
 
     SELECT LAST_INSERT_ID() AS OrderId;
 END$$
 
+
+DROP PROCEDURE IF EXISTS sp_AddItemToOrder;
+DELIMITER $$
 CREATE PROCEDURE sp_AddItemToOrder(
     IN p_OrderId INT UNSIGNED,
     IN p_ItemId INT UNSIGNED,
     IN p_Quantity INT UNSIGNED
 )
+
 BEGIN
-    DECLARE v_ItemPrice DECIMAL(12, 2);
-    
-    SELECT UnitPrice INTO v_ItemPrice FROM ITEM WHERE ItemId = p_ItemId;
-    
-    IF v_ItemPrice IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Item does not exist!';
-    END IF;
-    
-    INSERT INTO ITEM_ORDER (OrderId, ItemId, OrderQuantity, LineTotal)
-    VALUES (p_OrderId, p_ItemId, p_Quantity, p_Quantity * v_ItemPrice);
+    INSERT INTO ITEM_ORDER (OrderId, ItemId, OrderQuantity)
+    VALUES (p_OrderId, p_ItemId, p_Quantity);
     
     SELECT LAST_INSERT_ID() AS ItemOrderId;
 END$$
@@ -145,6 +259,7 @@ BEGIN
     SELECT
         (SELECT COUNT(*) FROM `ORDER`) AS TotalOrders,
         (SELECT COUNT(*) FROM `ORDER` WHERE OrderStatus = 'Pending') AS PendingOrders,
+        (SELECT COUNT(*) FROM  VEHICLE WHERE LicenseExpiryDate > CURRENT_DATE()) AS AvailableVehicles,
         (SELECT COUNT(*) FROM SHIPMENT) AS TotalShipments,
         (SELECT COUNT(*) FROM ASSIGNMENT) AS TotalAssignments,
         (SELECT COUNT(*) FROM DRIVER) AS TotalDrivers,
@@ -175,10 +290,13 @@ BEGIN
     LEFT JOIN SHIPMENT s ON a.ShipmentId = s.ShipmentId;
 END$$
 
+DROP PROCEDURE IF EXISTS sp_CreateAssignment;
+DELIMITER $$
 CREATE PROCEDURE sp_CreateAssignment(
     IN p_ShipmentId INT UNSIGNED,
     IN p_DriverId INT UNSIGNED,
-    IN p_VehicleId INT UNSIGNED
+    IN p_VehicleId INT UNSIGNED,
+    IN p_AssignDate DATE
 )
 BEGIN
     INSERT INTO ASSIGNMENT (ShipmentId, UserId, VehicleId, AssignDate, AssignmentStatus)

@@ -12,6 +12,7 @@
  */
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { fetchUsers } from '../services/userApi';
 
 // ── Constants ─────────────────────────────────────────────────────────
 export const ROLES = {
@@ -81,52 +82,113 @@ export const ROLE_META = [
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Lấy role đã lưu từ lần trước, mặc định STAFF
-  const [currentRole, setCurrentRole] = useState(() => {
-    const saved = localStorage.getItem('userRole');
-    return Object.values(ROLES).includes(saved) ? saved : ROLES.STAFF;
-  });
+  // Helper: map role string to category (STAFF/CUSTOMER/DRIVER)
+  const getRoleCategory = (role) => {
+    if (!role) return ROLES.STAFF;
+    const roleStr = String(role).toLowerCase();
+    if (roleStr.includes('customer') || roleStr.includes('khách hàng') || roleStr.includes('b2b') || roleStr.includes('b2c') ||
+        roleStr.includes('wholesaler') || roleStr.includes('retailer')) {
+      return ROLES.CUSTOMER;
+    } else if (roleStr.includes('driver') || roleStr.includes('tài xế')) {
+      return ROLES.DRIVER;
+    }
+    return ROLES.STAFF;
+  };
 
-  // currentUser được tính từ currentRole
-  const currentUser = useMemo(() => MOCK_USERS[currentRole], [currentRole]);
+  const normalizeUser = (user) => {
+    if (!user) return null;
+    return {
+      ...user,
+      id: typeof user.id === 'string' && !Number.isNaN(Number(user.id)) ? Number(user.id) : user.id,
+    };
+  };
 
-  // Đồng bộ localStorage mỗi khi role thay đổi
+  const savedCurrentUser = useMemo(() => {
+    const saved = localStorage.getItem('currentUser');
+    if (!saved) return null;
+    try {
+      return normalizeUser(JSON.parse(saved));
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(() => savedCurrentUser || MOCK_USERS[ROLES.STAFF]);
+
+  const currentRole = getRoleCategory(currentUser?.role);
+
   useEffect(() => {
-    localStorage.setItem('userRole', currentRole);
-  }, [currentRole]);
+    fetchUsers()
+      .then((data) => {
+        const normalized = data.map((user) => ({
+          ...user,
+          id: typeof user.id === 'string' && !Number.isNaN(Number(user.id)) ? Number(user.id) : user.id,
+        }));
+        setUsers(normalized);
+        if (!savedCurrentUser && normalized.length > 0) {
+          setCurrentUser(normalized[0]);
+        }
+      })
+      .catch(() => {
+        // Không quan trọng nếu không tải được user list, vẫn dùng mock fallback
+      });
+  }, [savedCurrentUser]);
 
-  /**
-   * switchRole — Chuyển đổi vai trò và điều hướng sang trang tương ứng.
-   * Dùng window.location.href để đảm bảo reset toàn bộ state của app.
-   */
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      localStorage.setItem('userRole', currentUser.role);
+    }
+  }, [currentUser]);
+
   const switchRole = (newRole) => {
-    if (!MOCK_USERS[newRole]) return;
+    const nextUser = users.find((user) => user.role === newRole) || MOCK_USERS[newRole];
+    if (!nextUser) return;
+
+    setCurrentUser(nextUser);
     localStorage.setItem('userRole', newRole);
-    setCurrentRole(newRole);
-    // Hard navigate để đảm bảo tất cả state được reset hoàn toàn
     window.location.href = ROLE_HOME_PATH[newRole];
   };
 
-  /** Trả về đường dẫn home của một role cụ thể */
-  const getHomePath = (role = currentRole) => ROLE_HOME_PATH[role] || '/admin';
+  const switchUser = (newUser) => {
+    if (!newUser || !newUser.role) return;
+    const normalized = normalizeUser(newUser);
+    setCurrentUser(normalized);
+    localStorage.setItem('userRole', normalized.role);
+    localStorage.setItem('currentUser', JSON.stringify(normalized));
+    // No redirect - let the router handle navigation based on updated role
+  };
 
-  /** Kiểm tra xem user hiện tại có role được phép không */
+  const getHomePath = (role = currentRole) => {
+    // If role is already a category (STAFF/CUSTOMER/DRIVER), use it directly
+    if (Object.values(ROLES).includes(role)) {
+      return ROLE_HOME_PATH[role] || '/admin';
+    }
+    // Otherwise map it from role string
+    const category = getRoleCategory(role);
+    return ROLE_HOME_PATH[category] || '/admin';
+  };
+
   const hasRole = (...allowedRoles) => allowedRoles.includes(currentRole);
 
   const value = useMemo(
     () => ({
       currentUser,
       currentRole,
+      users,
+      mockUsers: users,
       switchRole,
+      switchUser,
       getHomePath,
       hasRole,
+      getRoleCategory,
       ROLES,
       ROLE_META,
       // Backward compat
       getPathByRole: getHomePath,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentUser, currentRole]
+    [currentUser, currentRole, users, getRoleCategory]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

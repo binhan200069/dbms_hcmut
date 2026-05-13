@@ -427,7 +427,7 @@ export default function VehicleManagement() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
             <Truck size={26} className="text-indigo-600" />
-            Quản lý Phương tiện
+            Vehicle Management
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             Quản lý toàn bộ đội xe vận tải trong hệ thống

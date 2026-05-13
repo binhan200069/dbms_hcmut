@@ -51,8 +51,11 @@ function KpiCard({ label, value, icon: Icon, color, bg, suffix = '', trend }) {
   return (
     <div className="card p-5 flex flex-col gap-3">
       <div className="flex items-start justify-between">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: bg }}>
-          <Icon size={20} style={{ color }} />
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: bg }}>
+            <Icon size={20} style={{ color }} />
+          </div>
+          <p className="text-lg font-bold text-slate-800 m-0">{label}</p>
         </div>
         {trend != null && (
           <span className={`flex items-center gap-0.5 text-xs font-semibold ${trend >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -65,7 +68,6 @@ function KpiCard({ label, value, icon: Icon, color, bg, suffix = '', trend }) {
         <p className="text-2xl font-bold text-slate-800">
           {typeof value === 'number' ? value.toLocaleString() : (value ?? '—')}{suffix}
         </p>
-        <p className="text-sm text-slate-500 mt-0.5">{label}</p>
       </div>
     </div>
   );
@@ -126,8 +128,8 @@ export default function StaffDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">📊 Dashboard Tổng quan</h1>
-          <p className="text-slate-500 text-sm mt-1">Thống kê hoạt động logistics theo thời gian thực</p>
+          <h1 className="text-2xl font-bold text-slate-800">📊 Real-time Statistic</h1>
+          <p className="text-slate-500 text-sm mt-1">Control operating performance</p>
         </div>
         <button onClick={load} className="btn btn-secondary">
           <RefreshCw size={15} /><span className="hidden sm:inline">Làm mới</span>
@@ -136,10 +138,10 @@ export default function StaffDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Tổng đơn hàng"      value={kpis.TotalOrders}    icon={Package}    color="#6366f1" bg="#e0e7ff" trend={12} />
-        <KpiCard label="Đơn đang xử lý"     value={kpis.PendingOrders}  icon={Clock}      color="#f59e0b" bg="#fef3c7" />
-        <KpiCard label="Phương tiện sẵn sàng" value={kpis.ReadyVehicles} icon={Truck}      color="#10b981" bg="#d1fae5" />
-        <KpiCard label="Doanh thu tháng"     value={kpis.MonthlyRevenue != null ? `${(Number(kpis.MonthlyRevenue)/1e6).toFixed(1)}M` : '—'} icon={TrendingUp} color="#3b82f6" bg="#dbeafe" />
+        <KpiCard label="Total Orders"      value={kpis.TotalOrders}    icon={Package}    color="#6366f1" bg="#e0e7ff" trend={12} />
+        <KpiCard label="Pending Orders"     value={kpis.PendingOrders}  icon={Clock}      color="#f59e0b" bg="#fef3c7" />
+        <KpiCard label="Available Vehicles" value={kpis.AvailableVehicles} icon={Truck}      color="#10b981" bg="#d1fae5" />
+        <KpiCard label="Monthly Revenue"     value={kpis.MonthlyRevenue != null ? `${(Number(kpis.MonthlyRevenue)/1e6).toFixed(1)}M` : '—'} icon={TrendingUp} color="#3b82f6" bg="#dbeafe" />
       </div>
 
       {/* Revenue Chart + Status Pie */}

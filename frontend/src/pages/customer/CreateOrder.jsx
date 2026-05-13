@@ -13,6 +13,23 @@ import lookupApi from '../../api/lookupApi';
 
 const normalize = (r) => (Array.isArray(r) ? r : r?.data ?? []);
 
+const ORDER_STATUS_CONFIG = [
+  'Processing',
+  'Error',
+  'Completed',
+  'Pending',
+  'Canceled',
+]
+
+const PAYMENT_CONFIG = [
+  'COD',
+  'Net15',
+  'EOM',
+  'Net60',
+  'Prepaid'
+]
+
+
 export default function CreateOrder() {
   const [step, setStep]       = useState(1); // 1=thông tin, 2=hàng hóa, 3=xong
   const [submitting, setSub]  = useState(false);
@@ -21,10 +38,16 @@ export default function CreateOrder() {
   const [createdOrderId, setCreatedId] = useState(null);
 
   const [form, setForm] = useState({
+    orderDate:        new Date().toISOString().split('T')[0],
+    orderStatus:      ORDER_STATUS_CONFIG[0] || '',
     pickupLocation:   '',
-    deliveryLocation: '',
     freightFactor:    '1.0',
-    freightCost:      '0',
+    freightCost:      '1',
+    deliveryLocation: '',
+    deliveryDate:     '',
+    paymentTerm: '' || PAYMENT_CONFIG[0],
+    staffId: '', // random staff in planning deparment
+    customerId: '',
   });
 
   // Danh sách hàng thêm vào đơn
@@ -44,11 +67,11 @@ export default function CreateOrder() {
   const handleCreateOrder = async (e) => {
     e.preventDefault();
     if (!form.pickupLocation || !form.deliveryLocation) {
-      toast.error('Vui lòng chọn địa điểm lấy hàng và giao hàng');
+      toast.error('Please choose Pick up Location');
       return;
     }
     if (form.pickupLocation === form.deliveryLocation) {
-      toast.error('Địa điểm lấy hàng và giao hàng phải khác nhau');
+      toast.error('Pick up Location and Delivery Location must be different');
       return;
     }
     setSub(true);
@@ -67,6 +90,17 @@ export default function CreateOrder() {
       toast.error(err.message || 'Không thể tạo đơn hàng');
     } finally {
       setSub(false);
+    }
+  };
+
+  const handleChooseDate = (e) => {
+    
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    const today = form.orderDate;
+    if (value < today) {
+      toast.error('Delivery Date must be greater than order date')
     }
   };
 
@@ -129,14 +163,14 @@ export default function CreateOrder() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
           <ShoppingCart size={24} className="text-emerald-600" />
-          Tạo đơn hàng mới
+          Create New Order
         </h1>
-        <p className="text-slate-500 text-sm mt-1">Điền thông tin vận chuyển và danh sách hàng hóa</p>
+        <p className="text-slate-500 text-sm mt-1">Fill in transport and product information</p>
       </div>
 
       {/* Steps indicator */}
       <div className="flex items-center gap-3">
-        {[{ n: 1, label: 'Thông tin đơn' }, { n: 2, label: 'Hàng hóa' }].map(({ n, label }) => (
+        {[{ n: 1, label: 'Fill in Information' }, { n: 2, label: 'Hàng hóa' }].map(({ n, label }) => (
           <div key={n} className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
               step >= n ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
@@ -150,15 +184,29 @@ export default function CreateOrder() {
       {/* ── STEP 1: Order info ──────────────────────────────────────── */}
       {step === 1 && (
         <div className="card p-6">
-          <h2 className="font-bold text-slate-800 mb-5">Thông tin vận chuyển</h2>
+          <h2 className="font-bold text-slate-800 mb-5">Shopping Form</h2>
           <form onSubmit={handleCreateOrder} className="space-y-4">
+            <div className="form-group">
+              <label className="form-label">Order Date: {form.orderDate}</label>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Delivery Date</label>
+              <input
+                className="form-input"
+                type="date"
+                name='deliveryDate'
+                value={form.deliveryDate}
+                min={form.orderDate}
+                onChange={handleChooseDate}
+              />
+            </div>
             <div className="form-group">
               <label className="form-label">
                 <MapPin size={13} className="inline mr-1 text-emerald-500" />
-                Địa điểm lấy hàng <span className="text-red-500">*</span>
+                Pick Up Address <span className="text-red-500">*</span>
               </label>
               <select name="pickupLocation" className="form-select" value={form.pickupLocation} onChange={handleFormChange}>
-                <option value="">-- Chọn địa điểm lấy hàng --</option>
+                <option value="">-- From --</option>
                 {locations.map((l) => (
                   <option key={l.LocationId} value={l.LocationId}>{l.LocationName} — {l.Address}</option>
                 ))}
@@ -167,16 +215,36 @@ export default function CreateOrder() {
             <div className="form-group">
               <label className="form-label">
                 <MapPin size={13} className="inline mr-1 text-red-500" />
-                Địa điểm giao hàng <span className="text-red-500">*</span>
+                Delivery Address <span className="text-red-500">*</span>
               </label>
               <select name="deliveryLocation" className="form-select" value={form.deliveryLocation} onChange={handleFormChange}>
-                <option value="">-- Chọn địa điểm giao hàng --</option>
+                <option value="">-- To --</option>
                 {locations.map((l) => (
                   <option key={l.LocationId} value={l.LocationId}>{l.LocationName} — {l.Address}</option>
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className='form-group'>
+              <label className="form-label">Payment Term</label>
+              <div className="flex gap-4 mt-1">
+                {PAYMENT_CONFIG.map((term) => (
+                  <label key={term} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentTerm"
+                      value={term}
+                      checked={form.paymentTerm === term}
+                      onChange={handleFormChange}
+                      className="accent-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700">{term}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* <div className="grid grid-cols-2 gap-4">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Hệ số vận chuyển</label>
                 <input type="number" name="freightFactor" className="form-input" step="0.1" min="1" value={form.freightFactor} onChange={handleFormChange} />
@@ -185,7 +253,7 @@ export default function CreateOrder() {
                 <label className="form-label">Chi phí vận chuyển (₫)</label>
                 <input type="number" name="freightCost" className="form-input" min="0" value={form.freightCost} onChange={handleFormChange} />
               </div>
-            </div>
+            </div> */}
             <button type="submit" disabled={submitting} className="btn btn-primary w-full justify-center py-3">
               {submitting ? <><Loader2 size={16} className="animate-spin" />Đang tạo...</> : <>Tiếp theo <ArrowRight size={16} /></>}
             </button>
