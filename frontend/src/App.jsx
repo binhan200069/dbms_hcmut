@@ -12,6 +12,7 @@ import AdminLayout from './layouts/AdminLayout';
 const StaffDashboard    = lazy(() => import('./pages/staff/StaffDashboard'));
 const VehicleManagement = lazy(() => import('./pages/staff/VehicleManagement'));
 const DispatchPanel     = lazy(() => import('./pages/staff/DispatchPanel'));
+const StaffManagement   = lazy(() => import('./pages/staff/StaffManagement'));
 
 // CUSTOMER
 const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
@@ -84,6 +85,7 @@ function App() {
             <Route path="/admin/dispatch"   element={<P C={DispatchPanel} />} />
             <Route path="/admin/shipments"  element={<P C={DispatchPanel} />} />
             <Route path="/admin/orders"     element={<P C={OrderHistory} />} />
+            <Route path="/admin/staff"      element={<P C={StaffManagement} />} />
 
             {/* ── CUSTOMER ───────────────────────────────── */}
             <Route path="/customer"         element={<P C={CustomerDashboard} />} />

@@ -30,10 +30,28 @@ const ROLE_USER_ID = { STAFF: 1, CUSTOMER: 6, DRIVER: 11 };
 
 axiosClient.interceptors.request.use(
   (config) => {
-    const role   = localStorage.getItem('userRole') || 'STAFF';
-    const userId = ROLE_USER_ID[role] ?? 1;
-    // Đúng tên header mà backend đọc
-    config.headers['x-mock-role']    = role;
+    const savedUser = localStorage.getItem('currentUser');
+    let selectedUser = null;
+
+    if (savedUser) {
+      try {
+        selectedUser = JSON.parse(savedUser);
+      } catch {
+        selectedUser = null;
+      }
+    }
+
+    const role = selectedUser?.role || localStorage.getItem('userRole') || 'STAFF';
+    const userId = selectedUser?.id ?? ROLE_USER_ID[role] ?? 1;
+    // Map role to backend category (STAFF/CUSTOMER/DRIVER)
+    const roleStr = String(role).toLowerCase();
+    let backendRole = 'STAFF';
+    if (roleStr.includes('customer') || roleStr.includes('khách hàng') || roleStr.includes('b2b') || roleStr.includes('b2c')) {
+      backendRole = 'CUSTOMER';
+    } else if (roleStr.includes('driver') || roleStr.includes('tài xế')) {
+      backendRole = 'DRIVER';
+    }
+    config.headers['x-mock-role'] = backendRole;
     config.headers['x-mock-user-id'] = String(userId);
     return config;
   },

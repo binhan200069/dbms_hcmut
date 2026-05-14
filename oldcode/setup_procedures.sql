@@ -143,6 +143,7 @@ BEGIN
     SELECT
         (SELECT COUNT(*) FROM `ORDER`) AS TotalOrders,
         (SELECT COUNT(*) FROM `ORDER` WHERE OrderStatus = 'Pending') AS PendingOrders,
+        (SELECT COUNT(*) FROM  VEHICLE WHERE LicenseExpiryDate > CURRENT_DATE()) AS AvailableVehicles,
         (SELECT COUNT(*) FROM SHIPMENT) AS TotalShipments,
         (SELECT COUNT(*) FROM ASSIGNMENT) AS TotalAssignments,
         (SELECT COUNT(*) FROM DRIVER) AS TotalDrivers,

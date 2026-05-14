@@ -52,15 +52,15 @@ async function createOrder(req, res, next) {
             ? req.mockUser.userId
             : req.body.customerId;
 
-        const { pickupLocation, deliveryLocation, freightFactor, freightCost, staffId } = req.body;
+        const {pickupLocation, deliveryLocation, freightFactor, freightCost, PaymentTerm} = req.body;
 
-        const [rows] = await pool.query("CALL sp_CreateOrder(?, ?, ?, ?, ?, ?)", [
+        const [rows] = await pool.query("CALL sp_CreateOrder(?, ?, ?, ?, ?)", [
             customerId,
             pickupLocation,
             deliveryLocation,
-            freightFactor ?? 1.0,
+            //freightFactor ?? 1.0,
             freightCost   ?? 0,
-            staffId       ?? req.mockUser.userId,
+            PaymentTerm,
         ]);
         return res.status(201).json({ success: true, data: rows[0][0] });
     } catch (err) {
