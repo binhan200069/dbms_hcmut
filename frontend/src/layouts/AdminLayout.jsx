@@ -68,6 +68,7 @@ const MENU_CONFIG = {
         { to: '/customer',         icon: LayoutDashboard, label: 'Overview',        exact: true },
         { to: '/customer/create',  icon: Package,         label: 'Tạo đơn mới'  },
         { to: '/customer/history', icon: History,         label: 'Lịch sử đơn hàng' },
+        { to: '/customer/warehouses', icon: Package,      label: 'Tra cứu tồn kho' },
       ],
     },
     {

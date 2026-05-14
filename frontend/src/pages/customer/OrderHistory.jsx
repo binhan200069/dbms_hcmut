@@ -10,7 +10,11 @@ import {
 } from 'lucide-react';
 import orderApi from '../../api/orderApi';
 
-const normalize = (r) => (Array.isArray(r) ? r : r?.data ?? []);
+const normalize = (r) => {
+  if (Array.isArray(r)) return r;
+  const data = r?.data?.data || r?.data || r;
+  return Array.isArray(data) ? data : [];
+};
 
 const STATUS_MAP = {
   'Chờ xử lý':       { badge: 'badge-warning', icon: Clock },
@@ -48,11 +52,11 @@ function OrderDetailModal({ orderId, onClose }) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
                 ['Khách hàng', data.order?.CustomerName ?? '—'],
-                ['Trạng thái', data.order?.Status ?? '—'],
-                ['Lấy hàng tại', data.order?.PickupLocation ?? '—'],
-                ['Giao đến', data.order?.DeliveryLocation ?? '—'],
-                ['Chi phí', data.order?.FreightCost != null ? `${Number(data.order.FreightCost).toLocaleString()}₫` : '—'],
-                ['Ngày tạo', data.order?.CreatedAt ? new Date(data.order.CreatedAt).toLocaleDateString('vi-VN') : '—'],
+                ['Trạng thái', data.order?.OrderStatus ?? '—'],
+                ['Lấy hàng tại', data.order?.PickupLocationName ?? '—'],
+                ['Giao đến', data.order?.DeliveryLocationName ?? '—'],
+                ['Chi phí', data.order?.TotalFreightCost != null ? `${Number(data.order.TotalFreightCost).toLocaleString()}₫` : '—'],
+                ['Ngày tạo', data.order?.OrderDate ? new Date(data.order.CreatedAt).toLocaleDateString('vi-VN') : '—'],
               ].map(([k, v]) => (
                 <div key={k} className="p-3 bg-slate-50 rounded-xl">
                   <p className="text-xs text-slate-400 mb-0.5">{k}</p>
@@ -113,7 +117,7 @@ export default function OrderHistory() {
     try {
       await orderApi.cancel(id);
       toast.success('✅ Đã hủy đơn hàng');
-      load();
+      await load();
     } catch (err) {
       // Lỗi từ DB Trigger (đơn đang giao không thể hủy)
       toast.error(err.message || 'Không thể hủy đơn hàng');
@@ -123,9 +127,10 @@ export default function OrderHistory() {
   };
 
   const filtered = orders.filter((o) => {
-    const matchSt = filterSt === 'Tất cả' || o.Status === filterSt;
+    const matchSt = filterSt === 'Tất cả' || o.OrderStatus === filterSt;
     const matchSr = !search || String(o.OrderId).includes(search) ||
-      (o.CustomerName ?? '').toLowerCase().includes(search.toLowerCase());
+      (o.CustomerName ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      String(o.TotalFreightCost).includes(search);
     return matchSt && matchSr;
   });
 
@@ -187,23 +192,31 @@ export default function OrderHistory() {
                 </td></tr>
               )}
               {!loading && filtered.map((o) => {
-                const meta = STATUS_MAP[o.Status] ?? { badge: 'badge-default', icon: Package };
+                const meta = STATUS_MAP[o.OrderStatus] ?? { badge: 'badge-default', icon: Package };
+                
                 return (
                   <tr key={o.OrderId}>
                     <td><span className="font-bold font-mono text-indigo-600">#{o.OrderId}</span></td>
-                    <td className="text-sm text-slate-600 max-w-[150px] truncate">{o.PickupLocation ?? '—'}</td>
-                    <td className="text-sm text-slate-600 max-w-[150px] truncate">{o.DeliveryLocation ?? '—'}</td>
-                    <td className="font-semibold">{o.FreightCost != null ? `${Number(o.FreightCost).toLocaleString()}₫` : '—'}</td>
+                    
+                    <td className="text-sm text-slate-600 max-w-[150px] truncate">{o.PickupLocationName ?? '—'}</td>
+                    
+                    <td className="text-sm text-slate-600 max-w-[150px] truncate">{o.DeliveryLocationName ?? '—'}</td>
+                    
+                    <td className="font-semibold">{o.TotalFreightCost != null ? `${Number(o.TotalFreightCost).toLocaleString()}₫` : '—'}</td>
+                    
                     <td>
                       <span className={`badge ${meta.badge}`}>
-                        <meta.icon size={11} />{o.Status}
+                        <meta.icon size={11} />{o.OrderStatus}
                       </span>
                     </td>
-                    <td className="text-xs text-slate-400">{o.CreatedAt ? new Date(o.CreatedAt).toLocaleDateString('vi-VN') : '—'}</td>
+
+                    <td className="text-xs text-slate-400">{o.OrderDate ? new Date(o.OrderDate).toLocaleDateString('vi-VN') : '—'}</td>
+                    
                     <td>
                       <div className="flex items-center justify-center gap-1.5">
                         <button className="btn-icon btn-icon-primary" onClick={() => setViewId(o.OrderId)} title="Xem chi tiết"><Eye size={14} /></button>
-                        {o.Status === 'Chờ xử lý' && (
+                        
+                        {o.OrderStatus === 'Chờ xử lý' && (
                           <button
                             className="btn-icon btn-icon-danger"
                             title="Hủy đơn"

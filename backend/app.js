@@ -34,6 +34,7 @@ app.get("/", (req, res) => {
             tracking: "GET /api/tracking",
             dashboard: "GET /api/dashboard",
             lookup: "GET /api/lookup",
+            warehouses: "GET /api/warehouses",
         },
     });
 });

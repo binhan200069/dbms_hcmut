@@ -23,6 +23,9 @@ const OrderHistory      = lazy(() => import('./pages/customer/OrderHistory'));
 const DriverDashboard   = lazy(() => import('./pages/driver/DriverDashboard'));
 const MyTrips           = lazy(() => import('./pages/driver/MyTrips'));
 
+// WAREHOUSE
+const WarehousePage     = lazy(() => import('./pages/customer/WarehousePage'));
+
 // ── Loading Spinner ───────────────────────────────────────────────────
 function PageLoader() {
   return (
@@ -92,6 +95,7 @@ function App() {
             <Route path="/customer/create"  element={<P C={CreateOrder} />} />
             <Route path="/customer/history" element={<P C={OrderHistory} />} />
             <Route path="/customer/tracking" element={<P C={OrderHistory} />} />
+            <Route path="/customer/warehouses" element={<P C={WarehousePage} />} />
 
             {/* ── DRIVER ─────────────────────────────────── */}
             <Route path="/driver"           element={<P C={DriverDashboard} />} />

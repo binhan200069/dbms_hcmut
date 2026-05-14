@@ -42,7 +42,7 @@ export default function CreateOrder() {
     orderStatus:      ORDER_STATUS_CONFIG[0] || '',
     pickupLocation:   '',
     freightFactor:    '1.0',
-    freightCost:      '1',
+    freightCost:      '5000',
     deliveryLocation: '',
     deliveryDate:     '',
     paymentTerm: '' || PAYMENT_CONFIG[0],
@@ -79,8 +79,8 @@ export default function CreateOrder() {
       const res = await orderApi.create({
         pickupLocation:   Number(form.pickupLocation),
         deliveryLocation: Number(form.deliveryLocation),
-        freightFactor:    Number(form.freightFactor),
-        freightCost:      Number(form.freightCost),
+        freightFactor:    Number(form.freightFactor) || 1,
+        freightCost:      Number(form.freightCost) || 5000,
       });
       const order = res?.data ?? res;
       setCreatedId(order?.OrderId ?? order?.orderId);
@@ -119,7 +119,10 @@ export default function CreateOrder() {
       setItemForm({ itemId: '', quantity: 1 });
       toast.success('✅ Đã thêm hàng vào đơn');
     } catch (err) {
-      toast.error(err.message || 'Không thể thêm hàng');
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể thêm hàng';
+      toast.error(errorMessage);
+
+      console.error("Lỗi khi thêm item:", err);
     } finally {
       setSub(false);
     }
@@ -244,7 +247,7 @@ export default function CreateOrder() {
               </div>
             </div>
 
-            {/* <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Hệ số vận chuyển</label>
                 <input type="number" name="freightFactor" className="form-input" step="0.1" min="1" value={form.freightFactor} onChange={handleFormChange} />
@@ -253,7 +256,7 @@ export default function CreateOrder() {
                 <label className="form-label">Chi phí vận chuyển (₫)</label>
                 <input type="number" name="freightCost" className="form-input" min="0" value={form.freightCost} onChange={handleFormChange} />
               </div>
-            </div> */}
+            </div>
             <button type="submit" disabled={submitting} className="btn btn-primary w-full justify-center py-3">
               {submitting ? <><Loader2 size={16} className="animate-spin" />Đang tạo...</> : <>Tiếp theo <ArrowRight size={16} /></>}
             </button>

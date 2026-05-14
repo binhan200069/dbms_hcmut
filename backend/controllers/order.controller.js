@@ -54,12 +54,12 @@ async function createOrder(req, res, next) {
 
         const {pickupLocation, deliveryLocation, freightFactor, freightCost, PaymentTerm} = req.body;
 
-        const [rows] = await pool.query("CALL sp_CreateOrder(?, ?, ?, ?, ?)", [
+        const [rows] = await pool.query("CALL sp_CreateOrder(?, ?, ?, ?, ?, ?)", [
             customerId,
             pickupLocation,
             deliveryLocation,
-            //freightFactor ?? 1.0,
-            freightCost   ?? 0,
+            freightFactor ?? 1.0,
+            freightCost ?? 5000,
             PaymentTerm,
         ]);
         return res.status(201).json({ success: true, data: rows[0][0] });
@@ -99,9 +99,24 @@ async function deleteOrder(req, res, next) {
 // PATCH /api/orders/:id/cancel
 async function cancelOrder(req, res, next) {
     try {
-        const [rows] = await pool.query("CALL sp_CancelOrder(?)", [req.params.id]);
-        return res.json({ success: true, data: rows[0][0] });
+        const orderId = req.params.id;
+
+        const [result] = await pool.query("CALL sp_CancelOrder(?)", [orderId]);
+
+        const updatedData = (result && result[0] && result[0][0]) ? result[0][0] : null;
+
+        return res.json({ 
+            success: true, 
+            message: "Đơn hàng đã được hủy.",
+            data: updatedData
+        });
     } catch (err) {
+        if (err.sqlState === '45000') {
+            return res.status(400).json({ 
+                success: false, 
+                message: err.message || err.sqlMessage
+            });
+        }
         next(err);
     }
 }
@@ -117,6 +132,12 @@ async function addItemToOrder(req, res, next) {
         ]);
         return res.status(201).json({ success: true, data: rows[0][0] });
     } catch (err) {
+        if (err.sqlState === '45000') {
+            return res.status(400).json({ 
+                success: false, 
+                message: err.sqlMessage
+            });
+        }
         next(err);
     }
 }

@@ -7,6 +7,7 @@ const dashboardRoutes = require("./dashboard.routes");
 const lookupRoutes    = require("./lookup.routes");
 const userRoutes      = require("./user.routes");
 const staffRoutes     = require("./staff.routes");
+const warehouseRoutes = require("./warehouse.routes");
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/dashboard",  dashboardRoutes);
 router.use("/lookup",     lookupRoutes);
 router.use("/users",      userRoutes);
 router.use("/staff",      staffRoutes);
+router.use("/warehouses", warehouseRoutes);
 
 module.exports = router;
