@@ -311,19 +311,6 @@ export default function DispatchPanel() {
         </button>
       </div>
 
-      {/* ── Trigger Demo Banner ────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
-        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-        <div className="text-sm">
-          <p className="font-semibold text-amber-800">🔥 Demo DB Trigger: Kiểm tra tải trọng</p>
-          <p className="text-amber-700 mt-0.5">
-            Chọn một chuyến có nhiều hàng nặng, sau đó chọn xe nhỏ (tải trọng thấp) rồi bấm Phân công.
-            Trigger <code className="bg-amber-100 px-1 rounded text-xs">trg_before_assignment_insert</code> sẽ
-            từ chối và toast đỏ sẽ hiện câu lỗi tiếng Việt từ DB.
-          </p>
-        </div>
-      </div>
-
       {/* ── Main 2-column layout ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
