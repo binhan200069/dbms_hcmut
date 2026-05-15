@@ -147,6 +147,7 @@ export default function DispatchPanel() {
   });
 
   // ── Load all data in parallel ───────────────────────────────────────
+  // ── Load all data in parallel ───────────────────────────────────────
   const loadAll = useCallback(async () => {
     setLoadingPage(true);
     try {
@@ -156,10 +157,38 @@ export default function DispatchPanel() {
         lookupApi.getDrivers(),
         shipmentApi.getAllAssignments(),
       ]);
-      setShipments(normalize(sRes));
-      setVehicles(normalize(vRes));
-      setDrivers(normalize(dRes));
-      setAssignments(normalize(aRes));
+
+      const rawShipments = normalize(sRes);
+      const rawVehicles = normalize(vRes);
+      const rawDrivers = normalize(dRes);
+      const rawAssignments = normalize(aRes);
+
+      // 🛠️ MAPPING LẠI CHO CHUẨN VỚI TÊN CỘT DATABASE
+      setShipments(rawShipments.map(s => ({
+        ...s,
+        ShipmentId: s.ShipmentId || s.shipment_id || s.id,
+        RouteName: s.RouteName || s.route_name || 'Tuyến chưa đặt tên',
+        // Dưới DB không có cột Status cho Shipment, nên đọc từ OrderStatus hoặc Assignment
+        Status: s.Status || s.ShipmentStatus || s.OrderStatus || 'Chờ xử lý',
+        TotalWeight: s.TotalWeight || s.total_weight || 0,
+      })));
+
+      setVehicles(rawVehicles);
+      setDrivers(rawDrivers);
+
+      // MAPPING BẢNG LỊCH SỬ PHÂN CÔNG
+      setAssignments(rawAssignments.map(a => ({
+        ...a,
+        AssignmentId: a.AssignmentId || a.assignment_id || a.id,
+        ShipmentId: a.ShipmentId || a.shipment_id,
+        LicensePlate: a.LicensePlate || a.license_plate,
+        // Dưới DB tài xế dùng cột Name, UI lại dùng DriverName
+        DriverName: a.DriverName || a.Name || a.driver_name || 'Chưa rõ',
+        // DB dùng AssignmentStatus, UI dùng Status
+        Status: a.AssignmentStatus || a.Status || a.assignment_status || 'Đã lên kế hoạch',
+        AssignDate: a.AssignDate || a.assign_date,
+      })));
+
     } catch (err) {
       toast.error(err.message || 'Không thể tải dữ liệu');
     } finally {
@@ -229,7 +258,7 @@ export default function DispatchPanel() {
       // Reset form và reload
       setSelectedShipment(null);
       setForm({ vehicleId: '', driverId: '', assignDate: new Date().toISOString().slice(0, 10), status: 'Đã lên kế hoạch' });
-      loadAll();
+      await loadAll();
     } catch (err) {
       /**
        * Hiển thị lỗi từ DB Trigger bằng toast màu đỏ.

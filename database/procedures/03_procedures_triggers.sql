@@ -12,7 +12,7 @@ DROP PROCEDURE IF EXISTS sp_GetCustomerOrders;
 
 DROP PROCEDURE IF EXISTS sp_GetCustomerStats;
 
-DELIMITER / /
+DELIMITER //
 
 CREATE PROCEDURE sp_CreateOrder(
     IN p_CustomerId INT UNSIGNED,
@@ -178,4 +178,4 @@ BEGIN
     END IF;
 END //
 
-DELIMITER;
+DELIMITER ;

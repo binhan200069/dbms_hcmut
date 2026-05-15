@@ -67,16 +67,21 @@ async function getAllAssignments(req, res, next) {
 }
 
 // POST /api/assignments  — Phân xe + Tài xế cho chuyến
+// POST /api/assignments  — Phân xe + Tài xế cho chuyến
 async function createAssignment(req, res, next) {
     try {
         // TRIGGER trg_before_assignment_insert kiểm tra toàn bộ nghiệp vụ
         // (quá tải, đăng kiểm, GPLX, tài xế-xe match)
         const { shipmentId, vehicleId, driverId, assignDate } = req.body;
-        const [rows] = await pool.query("CALL sp_CreateAssignment(?, ?, ?)", [
+        
+        // SỬA Ở ĐÂY: Thêm 1 dấu chấm hỏi (?) và nhét assignDate vào mảng
+        const [rows] = await pool.query("CALL sp_CreateAssignment(?, ?, ?, ?)", [
             shipmentId,
             vehicleId,
             driverId,
+            assignDate || null // Truyền xuống biến thứ 4
         ]);
+        
         return res.status(201).json({ success: true, data: rows[0][0] });
     } catch (err) {
         next(err);

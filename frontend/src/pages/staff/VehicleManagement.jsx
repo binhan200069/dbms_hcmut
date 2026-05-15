@@ -70,7 +70,8 @@ function VehicleFormModal({ vehicle, onClose, onSuccess }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    // 🛑 CHỐT CHẶN QUAN TRỌNG NHẤT: Ngăn HTML tự động F5 trang
+    e.preventDefault(); 
 
     // Validation cơ bản phía client
     if (!form.license_plate.trim()) {
@@ -92,15 +93,15 @@ function VehicleFormModal({ vehicle, onClose, onSuccess }) {
       if (isEdit) {
         await vehicleApi.update(vehicle.vehicle_id, payload);
         toast.success(`✅ Đã cập nhật xe ${form.license_plate}`);
+        onSuccess({ ...vehicle, ...payload }); // Update local state
       } else {
         await vehicleApi.create(payload);
         toast.success(`✅ Đã thêm xe ${form.license_plate} vào hệ thống`);
+        onSuccess(null); // Báo hiệu thêm mới để fetch lại
       }
 
-      onSuccess(); // Reload danh sách
       onClose();
     } catch (err) {
-      // Lỗi từ DB Trigger hoặc validation backend
       toast.error(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
     } finally {
       setLoading(false);
@@ -349,9 +350,25 @@ export default function VehicleManagement() {
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await vehicleApi.getAll();
-      // Backend có thể trả về { data: [...] } hoặc [...]
-      setVehicles(Array.isArray(data) ? data : data.data || []);
+      const response = await vehicleApi.getAll();
+      
+      // ĐẶT CONSOLE LOG Ở ĐÂY:
+      console.log("1. Dữ liệu thô từ vehicleApi trả về:", response);
+
+      const rawList = Array.isArray(response) ? response : response.data || [];
+      console.log("2. Danh sách (rawList) sau khi bóc tách:", rawList);
+
+      const formattedList = rawList.map((v) => ({
+        vehicle_id: v.VehicleId || v.vehicleId || v.vehicle_id || v.id, // Bổ sung bắt chữ V viết hoa
+        license_plate: v.LicensePlate || v.licensePlate || v.license_plate,
+        vehicle_type: v.VehicleType || v.vehicleType || v.vehicle_type,
+        capacity_kg: v.MaxWeightCapacity || v.maxWeightCapacity || v.capacity_kg,
+        status: v.Status || v.status || 'Sẵn sàng',
+        notes: v.Notes || v.notes || ''
+      }));
+
+      console.log("3. Dữ liệu sau khi Mapping:", formattedList);
+      setVehicles(formattedList);
     } catch (err) {
       toast.error(err.message || 'Không thể tải danh sách phương tiện');
       setVehicles([]);

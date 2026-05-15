@@ -1,0 +1,1 @@
+docker exec -it logistics_db_container mysql -u root -p123456 logistics_db

@@ -234,7 +234,7 @@ CREATE TABLE `ORDER` (
     OrderStatus VARCHAR(30) NOT NULL DEFAULT 'Chờ xử lý' COMMENT 'Chờ xử lý / Đang xử lý / Đang vận chuyển / Đã giao / Đã hủy',
     PickupLocation INT UNSIGNED NOT NULL COMMENT 'LocationId điểm lấy hàng',
     FreightFactor DECIMAL(8, 4) NOT NULL DEFAULT 1.0000 COMMENT 'Hệ số cước',
-    FreightCost DECIMAL(15, 2) NOT NULL DEFAULT 5000.00 COMMENT 'Chi phí vận chuyển (VNĐ)',
+    FreightCost DECIMAL(15, 2) NOT NULL DEFAULT 0.00 COMMENT 'Chi phí vận chuyển (VNĐ)',
     DeliveryLocation INT UNSIGNED NOT NULL COMMENT 'LocationId điểm giao hàng',
     DeliveredDate DATETIME NULL COMMENT 'Ngày giao hàng thực tế',
     StaffId INT UNSIGNED NULL COMMENT 'Nhân viên phụ trách',
@@ -705,6 +705,40 @@ VALUES (1, 11), -- Cường Vong lái xe máy
     (3, 15);
 -- Giang Hồ cũng lái xe tải 5 tấn (cần cho ASSIGNMENT 5)
 
+
+-- =============================================================================
+-- THÊM 5 PHƯƠNG TIỆN MỚI (Giả định ID tự động tăng sẽ là 6, 7, 8, 9, 10)
+-- =============================================================================
+INSERT INTO
+    VEHICLE (LicensePlate, VehicleType, LicenseExpiryDate, MaxWeightCapacity)
+VALUES 
+    ('51F-11111', 'Xe tải 2 tấn', '2028-12-31', 2000.00),     -- VehicleId: 6
+    ('51G-22222', 'Xe tải 10 tấn', '2027-11-20', 10000.00),   -- VehicleId: 7
+    ('51H-33333', 'Container 40ft', '2028-06-15', 30000.00),  -- VehicleId: 8
+    ('51K-44444', 'Xe tải trung 3.5T', '2027-09-09', 3500.00),-- VehicleId: 9
+    ('51L-55555', 'Xe bán tải', '2029-01-01', 900.00);        -- VehicleId: 10
+
+-- =============================================================================
+-- GÁN 5 XE MỚI CHO TẤT CẢ TÀI XẾ (UserId từ 11 đến 15)
+-- =============================================================================
+INSERT INTO
+    DRIVER_VEHICLE (VehicleId, UserId)
+VALUES 
+    -- Gán Xe 6 (Tải 2 tấn) cho tất cả 5 tài xế
+    (6, 11), (6, 12), (6, 13), (6, 14), (6, 15),
+    
+    -- Gán Xe 7 (Tải 10 tấn) cho tất cả 5 tài xế
+    (7, 11), (7, 12), (7, 13), (7, 14), (7, 15),
+    
+    -- Gán Xe 8 (Container 40ft) cho tất cả 5 tài xế
+    (8, 11), (8, 12), (8, 13), (8, 14), (8, 15),
+    
+    -- Gán Xe 9 (Tải trung 3.5T) cho tất cả 5 tài xế
+    (9, 11), (9, 12), (9, 13), (9, 14), (9, 15),
+    
+    -- Gán Xe 10 (Xe bán tải) cho tất cả 5 tài xế
+    (10, 11), (10, 12), (10, 13), (10, 14), (10, 15);
+
 -- =============================================================================
 -- 9. LOCATION
 -- =============================================================================
@@ -1081,7 +1115,7 @@ VALUES (
         'Đã giao',
         1,
         1.0000,
-        8500.00,
+        850000.00,
         9,
         '2026-04-01 07:30:00',
         2,
@@ -1092,7 +1126,7 @@ VALUES (
         'Đã giao',
         2,
         1.2000,
-        4000.00,
+        2400000.00,
         6,
         '2026-04-03 10:00:00',
         3,
@@ -1103,7 +1137,7 @@ VALUES (
         'Đang vận chuyển',
         3,
         1.0000,
-        4500.00,
+        450000.00,
         10,
         NULL,
         2,
@@ -1114,7 +1148,7 @@ VALUES (
         'Đang xử lý',
         1,
         1.5000,
-        3600.00,
+        3600000.00,
         6,
         NULL,
         5,
@@ -1125,7 +1159,7 @@ VALUES (
         'Chờ xử lý',
         2,
         1.0000,
-        9000.00,
+        900000.00,
         7,
         NULL,
         3,
@@ -1136,7 +1170,7 @@ VALUES (
         'Chờ xử lý',
         1,
         1.0000,
-        7600.00,
+        760000.00,
         8,
         NULL,
         5,
@@ -1628,29 +1662,29 @@ END$$
 -- TRIGGER 5: BEFORE UPDATE on ORDER
 -- Không cho phép sửa đơn hàng đã giao hoặc đã hủy
 -- =============================================================================
--- CREATE TRIGGER trg_before_order_update
--- BEFORE UPDATE ON `ORDER`
--- FOR EACH ROW
--- BEGIN
---     IF OLD.OrderStatus IN ('Đã giao', 'Đã hủy') THEN
---         BEGIN
---             DECLARE v_err_msg VARCHAR(255);
---             SET v_err_msg = CONCAT(
---             'Lỗi: Không thể chỉnh sửa đơn hàng đã ở trạng thái "',
---             OLD.OrderStatus,
---             '"! Chỉ có thể cập nhật đơn hàng ở trạng thái Chờ xử lý hoặc Đang xử lý.'
---         );
---             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_err_msg;
---         END;
---     END IF;
+CREATE TRIGGER trg_before_order_update
+BEFORE UPDATE ON `ORDER`
+FOR EACH ROW
+BEGIN
+    IF OLD.OrderStatus IN ('Đã giao', 'Đã hủy') THEN
+        BEGIN
+            DECLARE v_err_msg VARCHAR(255);
+            SET v_err_msg = CONCAT(
+            'Lỗi: Không thể chỉnh sửa đơn hàng đã ở trạng thái "',
+            OLD.OrderStatus,
+            '"! Chỉ có thể cập nhật đơn hàng ở trạng thái Chờ xử lý hoặc Đang xử lý.'
+        );
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_err_msg;
+        END;
+    END IF;
 
---     -- Không cho phép thay đổi địa điểm khi đang vận chuyển
---     IF OLD.OrderStatus = 'Đang vận chuyển'
---        AND (NEW.PickupLocation <> OLD.PickupLocation OR NEW.DeliveryLocation <> OLD.DeliveryLocation) THEN
---         SIGNAL SQLSTATE '45000'
---         SET MESSAGE_TEXT = 'Lỗi: Không thể thay đổi địa điểm khi đơn hàng đang vận chuyển!';
---     END IF;
--- END$$
+    -- Không cho phép thay đổi địa điểm khi đang vận chuyển
+    IF OLD.OrderStatus = 'Đang vận chuyển'
+       AND (NEW.PickupLocation <> OLD.PickupLocation OR NEW.DeliveryLocation <> OLD.DeliveryLocation) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Lỗi: Không thể thay đổi địa điểm khi đơn hàng đang vận chuyển!';
+    END IF;
+END$$
 
 -- =============================================================================
 -- TRIGGER 6: AFTER INSERT on TRACKING_LOG
@@ -1713,7 +1747,7 @@ DELIMITER $$
 CREATE PROCEDURE sp_GetAllVehicles()
 BEGIN
     SELECT v.VehicleId, v.LicensePlate, v.VehicleType,
-           v.LicenseExpiryDate, v.MaxWeightCapacity,
+           v.LicenseExpiryDate, v.MaxWeightCapacity, v.Status,
            IF(v.LicenseExpiryDate < CURDATE(), 'Hết hạn', 'Còn hạn') AS RegistrationStatus,
            GROUP_CONCAT(u.Name SEPARATOR ', ') AS Drivers
     FROM VEHICLE v
@@ -1934,7 +1968,6 @@ BEGIN
         lp.LocationName AS PickupLocationName,
         ld.LocationName AS DeliveryLocationName,
         o.FreightFactor, o.FreightCost, o.DeliveredDate,
-        TotalFreightCost,
         uc.Name   AS CustomerName,
         us.Name   AS StaffName,
         COUNT(io.ItemId) AS TotalItems,
@@ -2704,201 +2737,63 @@ BEGIN
 
     RETURN v_bonus;
 END$$
-
 DELIMITER ;
+
+
+-- 1. Thêm 2 cột Status và Notes vào bảng VEHICLE
+ALTER TABLE VEHICLE
+ADD COLUMN Status VARCHAR(50) DEFAULT 'Sẵn sàng',
+ADD COLUMN Notes TEXT;
+
+-- 2. Xóa các Procedure cũ
+DROP PROCEDURE IF EXISTS sp_CreateVehicle;
+DROP PROCEDURE IF EXISTS sp_UpdateVehicle;
+
+-- 3. Tạo lại Procedure Create (Nhận 6 tham số)
+DELIMITER //
+CREATE PROCEDURE sp_CreateVehicle(
+    IN p_LicensePlate VARCHAR(20),
+    IN p_VehicleType VARCHAR(50),
+    IN p_LicenseExpiryDate DATE,
+    IN p_MaxWeightCapacity DECIMAL(10,2),
+    IN p_Status VARCHAR(50),
+    IN p_Notes TEXT
+)
+BEGIN
+    INSERT INTO VEHICLE (LicensePlate, VehicleType, LicenseExpiryDate, MaxWeightCapacity, Status, Notes)
+    VALUES (p_LicensePlate, p_VehicleType, p_LicenseExpiryDate, p_MaxWeightCapacity, p_Status, p_Notes);
+    
+    SELECT * FROM VEHICLE WHERE VehicleId = LAST_INSERT_ID();
+END //
+DELIMITER ;
+
+-- 4. Tạo lại Procedure Update (Nhận 7 tham số)
+DELIMITER //
+CREATE PROCEDURE sp_UpdateVehicle(
+    IN p_VehicleId INT,
+    IN p_LicensePlate VARCHAR(20),
+    IN p_VehicleType VARCHAR(50),
+    IN p_LicenseExpiryDate DATE,
+    IN p_MaxWeightCapacity DECIMAL(10,2),
+    IN p_Status VARCHAR(50),
+    IN p_Notes TEXT
+)
+BEGIN
+    UPDATE VEHICLE 
+    SET LicensePlate = p_LicensePlate,
+        VehicleType = p_VehicleType,
+        LicenseExpiryDate = p_LicenseExpiryDate,
+        MaxWeightCapacity = p_MaxWeightCapacity,
+        Status = p_Status,
+        Notes = p_Notes
+    WHERE VehicleId = p_VehicleId;
+    
+    SELECT * FROM VEHICLE WHERE VehicleId = p_VehicleId;
+END //
+DELIMITER ;
+
 
 SELECT 'Phase 2 — Dashboard & Function: OK' AS Status;
 
--- =============================================================================
--- WARE HOUSE, ORDER
--- =============================================================================
 
-USE logistics_db;
 
-SET NAMES utf8mb4;
-
-SET CHARACTER SET utf8mb4;
-
-DROP TRIGGER IF EXISTS trg_update_inventory_after_order_item;
-
-DROP TRIGGER IF EXISTS trg_item_order_insert;
-
-DROP TRIGGER IF EXISTS trg_item_order_update;
-
-DROP TRIGGER IF EXISTS trg_item_order_delete;
-
-DROP TRIGGER IF EXISTS trg_order_price_policy_update;
-
-DROP PROCEDURE IF EXISTS sp_GetItemsByWarehouse;
-
-DROP PROCEDURE IF EXISTS sp_GetAllWarehouses;
-
-DROP PROCEDURE IF EXISTS sp_CancelOrder;
-
-ALTER TABLE `ORDER` DROP COLUMN IF EXISTS TotalFreightCost;
-ALTER TABLE `ORDER` ADD COLUMN TotalFreightCost DECIMAL(15, 2) DEFAULT 0;
-
-UPDATE `ORDER` o
-SET o.TotalFreightCost = (
-    SELECT IFNULL(SUM(io.OrderQuantity), 0) * 5000 * 1.0
-    FROM ITEM_ORDER io
-    WHERE io.OrderId = o.OrderId
-);
-
-DELIMITER $$
-
-CREATE TRIGGER trg_update_inventory_after_order_item
-BEFORE INSERT ON ITEM_ORDER
-FOR EACH ROW
-BEGIN
-    DECLARE v_pickupLoc INT;
-    DECLARE v_currentStock INT DEFAULT 0;
-    DECLARE v_warehouseId INT;
-
-    -- Xác định đơn hàng này lấy từ đâu
-    SELECT pickupLocation INTO v_pickupLoc 
-    FROM `ORDER`
-    WHERE OrderId = NEW.OrderId;
-
-    SELECT WarehouseId INTO v_warehouseId 
-    FROM WAREHOUSE 
-    WHERE LocationId = v_pickupLoc;
-
-    -- Nếu là kho hàng, tiến hành kiểm tra tồn kho
-    IF v_warehouseId IS NOT NULL THEN
-        -- Lấy số lượng tồn hiện tại
-        SELECT Quantity INTO v_currentStock 
-        FROM INVENTORY 
-        WHERE ItemId = NEW.ItemId AND WarehouseId = v_warehouseId;
-
-        -- Nếu không đủ hàng hoặc mặt hàng không có trong kho này
-        IF v_currentStock IS NULL OR v_currentStock < NEW.orderQuantity THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Lỗi: Kho không đủ số lượng hàng hóa yêu cầu hoặc mặt hàng không tồn tại trong kho này!';
-        ELSE
-            -- Nếu đủ hàng, tiến hành trừ kho
-            UPDATE INVENTORY 
-            SET Quantity = Quantity - NEW.orderQuantity
-            WHERE ItemId = NEW.ItemId AND WarehouseId = v_warehouseId;
-        END IF;
-    END IF;
-END$$
-
-CREATE TRIGGER trg_item_order_insert
-AFTER INSERT ON ITEM_ORDER
-FOR EACH ROW
-BEGIN
-    DECLARE v_TotalQty INT;
-
-    SELECT SUM(OrderQuantity) INTO v_TotalQty
-    FROM ITEM_ORDER
-    WHERE OrderId = NEW.OrderId;
-
-    UPDATE `ORDER` o
-    SET TotalFreightCost = (o.FreightCost * o.FreightFactor * v_TotalQty)
-    WHERE OrderId = NEW.OrderId;
-END$$
-
-CREATE TRIGGER trg_item_order_update
-AFTER UPDATE ON ITEM_ORDER
-FOR EACH ROW
-BEGIN
-    DECLARE v_TotalQty INT;
-
-    SELECT SUM(OrderQuantity) INTO v_TotalQty
-    FROM ITEM_ORDER
-    WHERE OrderId = NEW.OrderId;
-
-    UPDATE `ORDER` o
-    SET o.TotalFreightCost = (o.FreightCost * o.FreightFactor * IFNULL(v_TotalQty, 0))
-    WHERE o.OrderId = NEW.OrderId;
-END$$
-
-CREATE TRIGGER trg_item_order_delete
-AFTER DELETE ON ITEM_ORDER
-FOR EACH ROW
-BEGIN
-    DECLARE v_TotalQty INT;
-
-    SELECT SUM(OrderQuantity) INTO v_TotalQty
-    FROM ITEM_ORDER
-    WHERE OrderId = OLD.OrderId;
-
-    UPDATE `ORDER` o
-    SET o.TotalFreightCost = (o.FreightCost * o.FreightFactor * IFNULL(v_TotalQty, 0))
-    WHERE o.OrderId = OLD.OrderId;
-END$$
-
-CREATE TRIGGER trg_order_price_policy_update
-BEFORE UPDATE ON `ORDER`
-FOR EACH ROW
-BEGIN
-    IF (OLD.FreightCost <> NEW.FreightCost OR OLD.FreightFactor <> NEW.FreightFactor) THEN
-        SET NEW.TotalFreightCost = (SELECT IFNULL(SUM(OrderQuantity), 0) 
-                                    FROM ITEM_ORDER 
-                                    WHERE OrderId = NEW.OrderId) 
-                                   * NEW.FreightCost * NEW.FreightFactor;
-    END IF;
-END$$
-
-CREATE PROCEDURE sp_GetItemsByWarehouse(IN p_WarehouseId INT UNSIGNED)
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM WAREHOUSE WHERE WarehouseId = p_WarehouseId) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Lỗi: Warehouse ID không tồn tại trong hệ thống!';
-    ELSE
-        SELECT 
-            i.ItemId,
-            i.Description,
-            i.Weight,
-            i.Unit,
-            inv.Quantity,
-            inv.Description AS InventoryNote
-        FROM INVENTORY inv
-        JOIN ITEM i ON inv.ItemId = i.ItemId
-        WHERE inv.WarehouseId = p_WarehouseId
-        ORDER BY i.ItemId ASC;
-    END IF;
-END$$
-
-CREATE PROCEDURE sp_GetAllWarehouses()
-BEGIN
-    SELECT 
-        WarehouseId, 
-        WarehouseName, 
-        WarehouseType, 
-        Capacity
-    FROM WAREHOUSE
-    ORDER BY WarehouseId ASC;
-END$$
-
-CREATE PROCEDURE sp_CancelOrder(IN p_OrderId INT)
-BEGIN
-    DECLARE v_pickupLoc INT;
-    DECLARE v_currentStatus VARCHAR(30);
-
-    -- Lấy thông tin cần thiết
-    SELECT OrderStatus, PickupLocation INTO v_currentStatus, v_pickupLoc 
-    FROM `ORDER` 
-    WHERE OrderId = p_OrderId;
-
-    -- Chỉ cho phép hủy nếu đơn đang ở trạng thái 'Chờ xử lý'
-    IF v_currentStatus <> 'Chờ xử lý' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Chỉ có thể hủy đơn hàng khi đang ở trạng thái Chờ xử lý!';
-    ELSE
-        -- Cập nhật trạng thái đơn hàng
-        UPDATE `ORDER` SET OrderStatus = 'Đã hủy' WHERE OrderId = p_OrderId;
-
-        -- Hoàn lại số lượng vào kho (Chỉ thực hiện nếu PickupLocation là một Kho hàng)
-        UPDATE INVENTORY inv
-        JOIN ITEM_ORDER io ON inv.ItemId = io.ItemId
-        JOIN WAREHOUSE w ON inv.WarehouseId = w.WarehouseId
-        SET inv.Quantity = inv.Quantity + io.OrderQuantity
-        WHERE io.OrderId = p_OrderId AND w.LocationId = v_pickupLoc;
-
-        -- Trả về kết quả
-        SELECT * FROM `ORDER` WHERE OrderId = p_OrderId;
-    END IF;
-END$$
-
-DELIMITER ;
