@@ -13,10 +13,12 @@ import { useAuth } from '../../context/AuthContext';
 const normalize = (r) => (Array.isArray(r) ? r : r?.data ?? []);
 
 const STATUS_CFG = {
+  'Chờ xác nhận':    { badge: 'badge-default',  icon: Clock,        next: 'Đang thực hiện' },
   'Đã lên kế hoạch': { badge: 'badge-default',  icon: Clock,        next: 'Đang thực hiện' },
   'Đang thực hiện':  { badge: 'badge-info',      icon: Truck,        next: 'Hoàn thành'     },
   'Hoàn thành':      { badge: 'badge-success',   icon: CheckCircle,  next: null             },
   'Hủy':             { badge: 'badge-danger',    icon: XCircle,      next: null             },
+  'Đã hủy':          { badge: 'badge-danger',    icon: XCircle,      next: null             },
 };
 
 function TripCard({ assignment, onUpdateStatus }) {
@@ -112,7 +114,7 @@ export default function MyTrips() {
     }
   };
 
-  const tabs = ['Tất cả', 'Đã lên kế hoạch', 'Đang thực hiện', 'Hoàn thành'];
+  const tabs = ['Tất cả', 'Chờ xác nhận', 'Đang thực hiện', 'Hoàn thành'];
   const filtered = filter === 'Tất cả'
     ? assignments
     : assignments.filter((a) => a.Status === filter);

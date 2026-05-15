@@ -4,11 +4,10 @@
  */
 const pool = require("../config/db");
 
-// GET /api/dashboard/stats?month=&year=
+// GET /api/dashboard/stats
 async function getDashboardStats(req, res, next) {
     try {
-        const { month = null, year = null } = req.query;
-        // sp_DashboardStats trả 5 result sets
+        // sp_DashboardStats trả 5 result sets (0 params)
         const [rows] = await pool.query("CALL sp_DashboardStats()");
         return res.json({
             success: true,

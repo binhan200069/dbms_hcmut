@@ -13,15 +13,19 @@ const StaffDashboard    = lazy(() => import('./pages/staff/StaffDashboard'));
 const VehicleManagement = lazy(() => import('./pages/staff/VehicleManagement'));
 const DispatchPanel     = lazy(() => import('./pages/staff/DispatchPanel'));
 const StaffManagement   = lazy(() => import('./pages/staff/StaffManagement'));
+const ShipmentsPage     = lazy(() => import('./pages/staff/ShipmentsPage'));
+const AdminOrders       = lazy(() => import('./pages/staff/AdminOrders'));
 
 // CUSTOMER
-const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
-const CreateOrder       = lazy(() => import('./pages/customer/CreateOrder'));
-const OrderHistory      = lazy(() => import('./pages/customer/OrderHistory'));
+const CustomerDashboard  = lazy(() => import('./pages/customer/CustomerDashboard'));
+const CreateOrder        = lazy(() => import('./pages/customer/CreateOrder'));
+const OrderHistory       = lazy(() => import('./pages/customer/OrderHistory'));
+const CustomerTracking   = lazy(() => import('./pages/customer/CustomerTracking'));
 
 // DRIVER
 const DriverDashboard   = lazy(() => import('./pages/driver/DriverDashboard'));
 const MyTrips           = lazy(() => import('./pages/driver/MyTrips'));
+const DriverTracking    = lazy(() => import('./pages/driver/DriverTracking'));
 
 // WAREHOUSE
 const WarehousePage     = lazy(() => import('./pages/customer/WarehousePage'));
@@ -86,21 +90,21 @@ function App() {
             <Route path="/admin"            element={<P C={StaffDashboard} />} />
             <Route path="/admin/vehicles"   element={<P C={VehicleManagement} />} />
             <Route path="/admin/dispatch"   element={<P C={DispatchPanel} />} />
-            <Route path="/admin/shipments"  element={<P C={DispatchPanel} />} />
-            <Route path="/admin/orders"     element={<P C={OrderHistory} />} />
+            <Route path="/admin/shipments"  element={<P C={ShipmentsPage} />} />
+            <Route path="/admin/orders"     element={<P C={AdminOrders} />} />
             <Route path="/admin/staff"      element={<P C={StaffManagement} />} />
 
             {/* ── CUSTOMER ───────────────────────────────── */}
             <Route path="/customer"         element={<P C={CustomerDashboard} />} />
             <Route path="/customer/create"  element={<P C={CreateOrder} />} />
-            <Route path="/customer/history" element={<P C={OrderHistory} />} />
-            <Route path="/customer/tracking" element={<P C={OrderHistory} />} />
+            <Route path="/customer/history"   element={<P C={OrderHistory} />} />
+            <Route path="/customer/tracking"  element={<P C={CustomerTracking} />} />
             <Route path="/customer/warehouses" element={<P C={WarehousePage} />} />
 
             {/* ── DRIVER ─────────────────────────────────── */}
             <Route path="/driver"           element={<P C={DriverDashboard} />} />
             <Route path="/driver/trips"     element={<P C={MyTrips} />} />
-            <Route path="/driver/tracking"  element={<P C={MyTrips} />} />
+            <Route path="/driver/tracking"  element={<P C={DriverTracking} />} />
 
             <Route path="*" element={<RoleRedirect />} />
           </Route>

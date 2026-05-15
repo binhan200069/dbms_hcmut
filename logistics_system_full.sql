@@ -1,4 +1,4 @@
-﻿-- =============================================================================
+-- =============================================================================
 -- LOGISTICS & SUPPLY CHAIN MANAGEMENT SYSTEM
 -- Phase 1: Database Schema Creation
 -- Database: logistics_db | Charset: utf8mb4
@@ -2795,5 +2795,140 @@ DELIMITER ;
 
 SELECT 'Phase 2 — Dashboard & Function: OK' AS Status;
 
+-- =============================================================================
+-- Phase 3 — Missing Stored Procedures (sp_DashboardStats, sp_GetAllStaff, sp_GetAllWarehouses)
+-- =============================================================================
+USE logistics_db;
+
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
+DROP PROCEDURE IF EXISTS sp_DashboardStats;
+DROP PROCEDURE IF EXISTS sp_GetAllStaff;
+DROP PROCEDURE IF EXISTS sp_GetAllWarehouses;
+
+DELIMITER $$
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- sp_DashboardStats — Thống kê tổng quan cho trang Admin Dashboard
+-- Trả về 5 result sets: KPI, doanh thu 6 tháng, phân phối trạng thái, top KH, đơn mới
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE PROCEDURE sp_DashboardStats()
+BEGIN
+    -- Result set 1: KPI tổng quan
+    SELECT
+        (SELECT COUNT(*)                                              FROM `ORDER`)                                  AS TotalOrders,
+        (SELECT COUNT(*)                                              FROM `ORDER` WHERE OrderStatus = 'Chờ xử lý') AS PendingOrders,
+        (SELECT COUNT(*)                                              FROM VEHICLE WHERE LicenseExpiryDate >= CURDATE()) AS AvailableVehicles,
+        (SELECT COUNT(*)                                              FROM SHIPMENT)                                 AS TotalShipments,
+        (SELECT COUNT(*)                                              FROM ASSIGNMENT)                               AS TotalAssignments,
+        (SELECT COUNT(*)                                              FROM DRIVER)                                   AS TotalDrivers,
+        (SELECT COALESCE(SUM(FreightCost), 0)                        FROM `ORDER` WHERE OrderStatus = 'Đã giao')   AS TotalRevenue;
+
+    -- Result set 2: Doanh thu 6 tháng gần nhất
+    SELECT
+        DATE_FORMAT(o.OrderDate, '%Y-%m') AS Month,
+        COALESCE(SUM(o.FreightCost), 0)   AS Revenue,
+        COUNT(o.OrderId)                  AS OrderCount
+    FROM `ORDER` o
+    WHERE o.OrderDate >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      AND o.OrderStatus = 'Đã giao'
+    GROUP BY DATE_FORMAT(o.OrderDate, '%Y-%m')
+    ORDER BY Month ASC;
+
+    -- Result set 3: Phân phối trạng thái đơn hàng
+    SELECT
+        OrderStatus AS Status,
+        COUNT(*)    AS Count
+    FROM `ORDER`
+    GROUP BY OrderStatus
+    ORDER BY Count DESC;
+
+    -- Result set 4: Top 5 khách hàng theo doanh thu
+    SELECT
+        u.UserId,
+        u.Name          AS CustomerName,
+        COUNT(o.OrderId)             AS TotalOrders,
+        COALESCE(SUM(o.FreightCost), 0) AS TotalRevenue
+    FROM CUSTOMER c
+    JOIN `USER`  u ON c.UserId = u.UserId
+    LEFT JOIN `ORDER` o ON c.UserId = o.CustomerId AND o.OrderStatus = 'Đã giao'
+    GROUP BY u.UserId, u.Name
+    ORDER BY TotalRevenue DESC
+    LIMIT 5;
+
+    -- Result set 5: 5 đơn hàng mới nhất
+    SELECT
+        o.OrderId,
+        o.OrderDate,
+        o.OrderStatus,
+        u.Name          AS CustomerName,
+        o.FreightCost,
+        ld.LocationName AS DeliveryLocation
+    FROM `ORDER` o
+    JOIN `USER`    u  ON o.CustomerId       = u.UserId
+    LEFT JOIN LOCATION ld ON o.DeliveryLocation = ld.LocationId
+    ORDER BY o.OrderDate DESC
+    LIMIT 5;
+END$$
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- sp_GetAllStaff — Lấy danh sách tất cả nhân viên (JOIN USER để lấy tên, email…)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE PROCEDURE sp_GetAllStaff()
+BEGIN
+    SELECT
+        s.UserId,
+        u.Account,
+        u.Name,
+        u.Email,
+        u.Address,
+        u.Status,
+        s.Position,
+        s.Department,
+        GROUP_CONCAT(DISTINCT up.Phone ORDER BY up.Phone SEPARATOR ', ') AS Phone
+    FROM STAFF s
+    JOIN `USER`     u  ON s.UserId = u.UserId
+    LEFT JOIN USER_PHONE up ON u.UserId = up.UserId
+    GROUP BY s.UserId, u.Account, u.Name, u.Email, u.Address, u.Status, s.Position, s.Department
+    ORDER BY s.UserId;
+END$$
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- sp_GetAllWarehouses — Lấy danh sách tất cả kho bãi (JOIN LOCATION & STAFF)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE PROCEDURE sp_GetAllWarehouses()
+BEGIN
+    SELECT
+        w.WarehouseId,
+        w.WarehouseName,
+        w.WarehouseType,
+        w.Capacity,
+        w.TakeoverDate,
+        l.LocationName,
+        l.Address,
+        l.Latitude,
+        l.Longitude,
+        u.Name  AS ManagerName,
+        u.Email AS ManagerEmail,
+        COALESCE(inv_summary.TotalItems, 0)    AS TotalItems,
+        COALESCE(inv_summary.TotalQuantity, 0) AS TotalQuantity
+    FROM WAREHOUSE w
+    LEFT JOIN LOCATION l ON w.LocationId = l.LocationId
+    LEFT JOIN STAFF    s ON w.StaffId    = s.UserId
+    LEFT JOIN `USER`   u ON s.UserId     = u.UserId
+    LEFT JOIN (
+        SELECT WarehouseId,
+               COUNT(DISTINCT ItemId)  AS TotalItems,
+               SUM(Quantity)           AS TotalQuantity
+        FROM INVENTORY
+        GROUP BY WarehouseId
+    ) inv_summary ON w.WarehouseId = inv_summary.WarehouseId
+    ORDER BY w.WarehouseId;
+END$$
+
+DELIMITER ;
+
+SELECT 'Phase 3 — Missing Procedures: OK' AS Status;
 
 
