@@ -4,7 +4,13 @@ async function getUserById(userId) {
     const [rows] = await db.query(
         `SELECT u.UserId AS id, u.Name AS name, u.Email AS email,
                 c.CustomerType AS customerType,
-                COALESCE(s.Position, c.CustomerType, 'Driver') AS role
+                s.Position AS position,
+                CASE
+                    WHEN s.UserId IS NOT NULL THEN 'STAFF'
+                    WHEN c.UserId IS NOT NULL THEN 'CUSTOMER'
+                    WHEN d.UserId IS NOT NULL THEN 'DRIVER'
+                    ELSE 'STAFF'
+                END AS role
          FROM \`USER\` u
          LEFT JOIN \`CUSTOMER\` c ON u.UserId = c.UserId
          LEFT JOIN \`STAFF\` s ON u.UserId = s.UserId
@@ -20,7 +26,13 @@ async function getAllUsers() {
     const [rows] = await db.query(
         `SELECT u.UserId AS id, u.Name AS name, u.Email AS email,
                 c.CustomerType AS customerType,
-                COALESCE(s.Position, c.CustomerType, 'Driver') AS role
+                s.Position AS position,
+                CASE
+                    WHEN s.UserId IS NOT NULL THEN 'STAFF'
+                    WHEN c.UserId IS NOT NULL THEN 'CUSTOMER'
+                    WHEN d.UserId IS NOT NULL THEN 'DRIVER'
+                    ELSE 'STAFF'
+                END AS role
          FROM \`USER\` u
          LEFT JOIN \`CUSTOMER\` c ON u.UserId = c.UserId
          LEFT JOIN \`STAFF\` s ON u.UserId = s.UserId
@@ -29,6 +41,7 @@ async function getAllUsers() {
 
     return rows;
 }
+
 
 module.exports = {
     getUserById,

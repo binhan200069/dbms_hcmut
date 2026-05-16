@@ -5,8 +5,22 @@
 const pool = require("../config/db");
 
 // GET /api/orders
+// Nếu role=CUSTOMER → chỉ trả đơn hàng của họ (lọc theo UserId)
+// Nếu role=STAFF    → trả toàn bộ đơn hàng
 async function getAllOrders(req, res, next) {
     try {
+        const { role, userId } = req.mockUser;
+
+        if (role === "CUSTOMER") {
+            // Dùng sp_SearchOrders với customerId để lọc đúng khách hàng
+            const [rows] = await pool.query(
+                "CALL sp_SearchOrders(?, ?, ?, ?)",
+                [null, null, null, userId]
+            );
+            return res.json({ success: true, data: rows[0] });
+        }
+
+        // STAFF: xem tất cả
         const [rows] = await pool.query("CALL sp_GetAllOrders()");
         return res.json({ success: true, data: rows[0] });
     } catch (err) {

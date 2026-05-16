@@ -9,7 +9,7 @@
 const ROLE_DEFAULTS = {
     STAFF:    { userId: 1,  name: "Nguyễn Văn A" },
     CUSTOMER: { userId: 6,  name: "Công ty TNHH ABC" },
-    DRIVER:   { userId: 11, name: "Cường Vong" },
+    DRIVER:   { userId: 12, name: "Danh Nguyễn" },  // Có 2 assignment trong seed data
 };
 
 const VALID_ROLES = ["STAFF", "CUSTOMER", "DRIVER"];

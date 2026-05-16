@@ -31,25 +31,25 @@ const ROLE_HOME_PATH = {
 // Mock users: mỗi role tương ứng với 1 người dùng giả lập
 const MOCK_USERS = {
   [ROLES.STAFF]: {
-    id:     'STF001',
-    name:   'Nguyễn Điều Phối',
+    id:     1,
+    name:   'Nguyễn Văn A',
     role:   ROLES.STAFF,
-    email:  'staff@logistics.vn',
-    avatar: 'NĐ',
+    email:  'nguyenvana@logistics.vn',
+    avatar: 'NV',
   },
   [ROLES.CUSTOMER]: {
-    id:     'CUS001',
-    name:   'Trần Thị Khách Hàng',
+    id:     6,
+    name:   'Công ty TNHH ABC',
     role:   ROLES.CUSTOMER,
-    email:  'customer@logistics.vn',
-    avatar: 'TK',
+    email:  'billing@ctyabc.com',
+    avatar: 'CT',
   },
   [ROLES.DRIVER]: {
-    id:     'DRV001',
-    name:   'Lê Văn Tài Xế',
+    id:     12,
+    name:   'Danh Nguyễn',
     role:   ROLES.DRIVER,
-    email:  'driver@logistics.vn',
-    avatar: 'LX',
+    email:  'danhnguyen@logistics.vn',
+    avatar: 'DN',
   },
 };
 

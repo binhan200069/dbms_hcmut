@@ -57,8 +57,22 @@ async function removeOrderFromShipment(req, res, next) {
 }
 
 // GET /api/assignments
+// Nếu role=DRIVER → chỉ trả phân công của tài xế đó
+// Nếu role=STAFF  → trả toàn bộ
 async function getAllAssignments(req, res, next) {
     try {
+        const { role, userId } = req.mockUser;
+
+        if (role === "DRIVER") {
+            // Lọc chỉ những phân công của tài xế này
+            const [rows] = await pool.query(
+                "CALL sp_GetAssignmentsByDriver(?)",
+                [userId]
+            );
+            return res.json({ success: true, data: rows[0] });
+        }
+
+        // STAFF: xem tất cả
         const [rows] = await pool.query("CALL sp_GetAllAssignments()");
         return res.json({ success: true, data: rows[0] });
     } catch (err) {
